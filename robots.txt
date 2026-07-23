@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /admin.html
+
+Sitemap: https://sakinzo-work.github.io/sakinzo/frontend/sitemap.xml
