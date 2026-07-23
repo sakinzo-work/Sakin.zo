@@ -15,7 +15,7 @@ import Footer from './components/Footer'
 import HtmlPage from './components/HtmlPage'
 import { getLegacyHead } from './components/LegacyMarkup'
 import SubPage from './components/SubPage'
-import { normalizeHtmlLinks, normalizeLegacyHref, slugFromLocation } from './routing'
+import { normalizeHtmlLinks, normalizeLegacyHref, routeHref, slugFromLocation } from './routing'
 
 function loadScript(src) {
   return new Promise((resolve, reject) => {
@@ -80,12 +80,15 @@ function HomePage() {
     document.head.appendChild(leafletCss)
 
     let legacyScript
+    const observer = new MutationObserver(() => normalizeHtmlLinks(document))
+    observer.observe(document.body, { childList: true, subtree: true })
+
     loadScript('https://unpkg.com/leaflet@1.9.4/dist/leaflet.js')
       .catch(() => undefined)
       .finally(() => {
         legacyScript = document.createElement('script')
         legacyScript.dataset.reactManaged = 'homepage'
-        legacyScript.textContent = page.script.replace(/project\.html\?id=/g, '/project?id=')
+        legacyScript.textContent = page.script.replace(/project\.html\?id=/g, `${routeHref('project')}?id=`)
         document.body.appendChild(legacyScript)
         document.dispatchEvent(new Event('DOMContentLoaded'))
         normalizeHtmlLinks(document)
@@ -96,6 +99,7 @@ function HomePage() {
       style.remove()
       leafletCss.remove()
       legacyScript?.remove()
+      observer.disconnect()
     }
   }, [page])
 

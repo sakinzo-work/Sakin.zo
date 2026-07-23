@@ -21,6 +21,21 @@ const htmlRoutes = new Set([
   'project',
 ])
 
+export function appBasePath() {
+  const base = import.meta.env.BASE_URL || '/'
+  if (base === './') return '/'
+  return base.startsWith('/') ? base : `/${base}`
+}
+
+function withBase(path = '') {
+  const base = appBasePath()
+  const cleanBase = base.endsWith('/') ? base.slice(0, -1) : base
+  const cleanPath = path.startsWith('/') ? path : `/${path}`
+  if (!cleanBase) return cleanPath
+  if (cleanPath === '/') return `${cleanBase}/`
+  return `${cleanBase}${cleanPath}`
+}
+
 export function normalizeLegacyHref(href = '') {
   if (!href || href.startsWith('#')) return href
   if (/^(https?:|mailto:|tel:|javascript:)/i.test(href)) return href
@@ -31,9 +46,9 @@ export function normalizeLegacyHref(href = '') {
   if (!path || path === 'index.html') path = ''
   if (path.endsWith('.html')) path = path.slice(0, -5)
 
-  if (!path) return `/${url.search}${url.hash}`
+  if (!path) return `${withBase('/')}${url.search}${url.hash}`
   if (!htmlRoutes.has(path)) return href
-  return `/${path}${url.search}${url.hash}`
+  return `${withBase(path)}${url.search}${url.hash}`
 }
 
 export function normalizeHtmlLinks(root = document) {
@@ -45,7 +60,14 @@ export function normalizeHtmlLinks(root = document) {
 
 export function slugFromLocation() {
   let slug = window.location.pathname.replace(/^\/+/, '').replace(/\/$/, '')
+  let base = appBasePath().replace(/^\/+/, '').replace(/\/$/, '')
+  if (base && slug === base) slug = ''
+  if (base && slug.startsWith(`${base}/`)) slug = slug.slice(base.length + 1)
   if (slug === 'index.html') slug = ''
   if (slug.endsWith('.html')) slug = slug.slice(0, -5)
   return slug
+}
+
+export function routeHref(path = '') {
+  return withBase(path)
 }

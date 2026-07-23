@@ -34,6 +34,7 @@ function copyStaticPages() {
 }
 
 export default defineConfig({
+  base: process.env.VITE_BASE_PATH || '/',
   plugins: [react(), copyStaticPages()],
   publicDir: false,
   build: {
