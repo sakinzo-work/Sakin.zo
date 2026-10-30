@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.cache/
+.env
+.env.local
+backend/.env
+backend/uploads/*
+!backend/uploads/.gitkeep
+test-results/
+*.log
