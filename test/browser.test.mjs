@@ -821,6 +821,108 @@ await test("employee project edits submit approvals and unauthorized sections re
   }
 });
 
+await test("header dropdowns remain open across the pointer gap and support keyboard navigation", async () => {
+  const { page, open, errors, close } = await session();
+  try {
+    for (const path of ["/", "/contact", "/ai-development", "/blog"]) {
+      await open(path);
+      for (const label of ["About Us", "Services"]) {
+        const trigger = page.locator("header .nbtn").filter({ hasText: label });
+        const group = trigger.locator("..");
+        const menu = group.locator(".drop");
+        await trigger.hover();
+        await menu.waitFor({ state: "visible" });
+        assert.equal(await trigger.getAttribute("aria-expanded"), "true");
+        const button = await trigger.boundingBox(), panel = await menu.boundingBox();
+        await page.mouse.move(button.x + button.width / 2, (button.y + button.height + panel.y) / 2);
+        // Staying in the visual gap must not run out the delayed close timer.
+        await page.waitForTimeout(300);
+        assert.equal(await menu.isVisible(), true, `${path}: ${label} closes in the gap`);
+        await menu.locator("a").first().hover();
+        assert.equal(await menu.isVisible(), true);
+        await page.mouse.move(1400, 800);
+        await menu.waitFor({ state: "hidden" });
+        await trigger.focus();
+        await page.keyboard.press("ArrowDown");
+        await menu.waitFor({ state: "visible" });
+        await page.waitForFunction(() => document.activeElement?.matches(".drop a"));
+        await page.keyboard.press("Escape");
+        await menu.waitFor({ state: "hidden" });
+        assert.equal(await trigger.evaluate(element => element === document.activeElement), true);
+      }
+    }
+    await open("/");
+    await page.locator("header .nbtn").filter({ hasText: "About Us" }).hover();
+    await page.locator('header .drop a[href="/careers"]').click();
+    await page.waitForURL("**/careers");
+    await page.locator("header .drop").first().waitFor({ state: "hidden" });
+    assert.deepEqual(errors, []);
+  } finally { await close(); }
+});
+
+await test("failed and slow public data has styled recovery controls and preserves saved projects", async () => {
+  const { page, open, errors, close } = await session();
+  let mode = "hold", release;
+  let gate = new Promise(resolve => { release = resolve; });
+  const hold = () => { mode = "hold"; gate = new Promise(resolve => { release = resolve; }); };
+  await page.route("**/api/public/site-data", async route => {
+    if (mode === "hold") await gate;
+    await route.fulfill(mode === "error" ? { status: 503, json: { message: "Fixture outage" } } :
+      { json: { ...siteData, projects: mode === "empty" ? [] : [project] } }).catch(() => {});
+  });
+  try {
+    await open("/");
+    await page.locator("#sec-projects .project-skeleton").first().waitFor();
+    assert.equal(await page.locator("#sec-projects .project-skeleton").count(), 3);
+    assert.equal(await page.locator(".project-filter").count(), 0);
+    mode = "error"; release();
+    const failure = page.locator('#sec-projects .content-state[data-state="error"]');
+    await failure.waitFor();
+    for (const width of [1440, 390]) {
+      await page.setViewportSize({ width, height: 900 });
+      const retry = failure.getByRole("button", { name: "Try again", exact: true });
+      const appearance = await retry.evaluate(element => ({ height: element.getBoundingClientRect().height,
+        background: getComputedStyle(element).backgroundColor }));
+      assert.ok(appearance.height >= 44);
+      assert.equal(appearance.background, "rgb(22, 115, 255)");
+      assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+      await failure.screenshot({ path: path.join(root, `test-results/projects-recovery-${width}.png`) });
+    }
+    hold();
+    await failure.getByRole("button", { name: "Try again", exact: true }).click();
+    await page.locator("#sec-projects .project-skeleton").first().waitFor();
+    assert.equal(await page.locator('#sec-projects .content-state[data-state="error"]').count(), 0);
+    mode = "success"; release();
+    await page.locator("#main-projects-grid .project-card").first().waitFor();
+    assert.equal(await page.locator(".project-filter").count(), 10);
+    mode = "error";
+    await page.reload();
+    await page.locator('#sec-projects .content-state--compact[data-state="error"]').waitFor();
+    assert.equal(await page.locator("#main-projects-grid .project-card").count(), 1);
+    hold();
+    await page.locator("#sec-projects").getByRole("button", { name: "Try again", exact: true }).click();
+    await page.locator("#sec-projects").getByRole("button", { name: "Refreshing…", exact: true }).waitFor();
+    assert.equal(await page.locator("#sec-projects .content-state-action").isDisabled(), true);
+    assert.equal(await page.locator("#main-projects-grid .project-card").count(), 1);
+    mode = "success"; release();
+    await page.locator("#sec-projects .content-state--compact").waitFor({ state: "hidden" });
+    mode = "empty";
+    await page.reload();
+    await page.getByRole("heading", { name: "No projects published yet." }).waitFor();
+    assert.equal(await page.locator("#sec-projects .content-state-action").count(), 0);
+    assert.equal(await page.locator(".project-filter").count(), 0);
+    await page.route("**/api/blogs", route => route.fulfill({ status: 503, json: {} }));
+    await open("/blog");
+    await page.getByRole("heading", { name: "Articles are temporarily unavailable" }).waitFor();
+    assert.equal(await page.locator(".content-state-action").isVisible(), true);
+    await page.route("**/api/projects/unavailable", route => route.fulfill({ status: 503, json: {} }));
+    await open("/projects/unavailable");
+    await page.getByRole("heading", { name: "Project details are temporarily unavailable" }).waitFor();
+    assert.equal(await page.locator(".content-state-action").isVisible(), true);
+    assert.deepEqual(errors, []);
+  } finally { release(); await close(); }
+});
+
 await browser.close();
 await new Promise((resolve) => {
   server.close(resolve);

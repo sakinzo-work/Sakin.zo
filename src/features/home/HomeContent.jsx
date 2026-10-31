@@ -7,6 +7,7 @@ import { T } from "../../context/LanguageContext.jsx";
 import { mediaUrl, safeUrl } from "../../lib/api.js";
 import { assetUrl } from "../../lib/paths.js";
 import { projectImages } from "../../lib/project.js";
+import ContentState, { ProjectSkeletons } from "../../components/ContentState.jsx";
 export const categoryOrder = [
   "IoT",
   "Web Development",
@@ -198,7 +199,7 @@ export function HomeProjects() {
               </button>
             )}
           </div>
-          <div
+          {!!projects.length && <div
             className="project-filters"
             id="project-filters"
             role="group"
@@ -221,31 +222,26 @@ export function HomeProjects() {
                 <T text={label} />
               </button>
             ))}
-          </div>
-          <div className="projects-grid" id="main-projects-grid">
+          </div>}
+          {!!projects.length && (loading || error) && <ContentState compact
+            state={error ? "error" : "loading"}
+            title={error ? "Showing saved projects" : "Updating projects…"}
+            description={error ? "The latest updates couldn't be loaded. You can still explore our work below." : "You can keep browsing while we check for updates."}
+            onAction={() => refresh()} busy={loading} />}
+          <div className="projects-grid" id="main-projects-grid" aria-busy={loading}>
             {filtered.length ? (
               filtered
                 .slice(0, count)
                 .map((project) => (
                   <ProjectCard key={project._id} project={project} />
                 ))
-            ) : (
-              <p className="empty-projects" role="status">
-                <T
-                  text={
-                    loading
-                      ? "Loading projects…"
-                      : error
-                        ? "Unable to load projects right now."
-                        : projects.length ? "No projects in this category yet." : "No projects published yet."
-                  }
-                />
-                {error && (
-                  <button type="button" onClick={() => refresh()}>
-                    <T>Try again</T>
-                  </button>
-                )}
-              </p>
+            ) : loading && !projects.length ? <ProjectSkeletons /> : (
+              <ContentState className="empty-projects"
+                state={error && !projects.length ? "error" : "empty"}
+                title={error && !projects.length ? "Projects are temporarily unavailable" : projects.length ? "No projects in this category yet." : "No projects published yet."}
+                description={error && !projects.length ? "Please try again in a moment to explore our latest work." : projects.length ? "Explore all our projects to find more of what we build." : "Our latest work will appear here soon."}
+                onAction={error && !projects.length ? () => refresh() : projects.length ? () => { setFilter("all"); setCount(3); } : undefined}
+                actionLabel={error && !projects.length ? "Try again" : "View all projects"} />
             )}
           </div>
           {count < filtered.length && (
@@ -266,7 +262,7 @@ export function HomeProjects() {
   );
 }
 export function HomeInsights() {
-  const { site } = useSiteData();
+  const { site, loading, error, refresh } = useSiteData();
   const rows = visibleItems(site.insights);
   const fallback = visibleItems(site.blogs).map((post) => ({
     ...post,
@@ -330,9 +326,10 @@ export function HomeInsights() {
           </article>
         ))
       ) : (
-        <p>
-          <T>No insights published yet.</T>
-        </p>
+        <ContentState compact state={loading ? "loading" : error ? "error" : "empty"}
+          title={loading ? "Loading insights…" : error ? "Insights are temporarily unavailable" : "New insights are on the way"}
+          description={error ? "Please try again in a moment." : "Our latest ideas will appear here soon."}
+          onAction={error && !loading ? () => refresh() : undefined} />
       )}
     </div>
   );
@@ -416,7 +413,7 @@ export function HomeTestimonials() {
   );
 }
 export function HomeMap() {
-  const { site } = useSiteData(),
+  const { site, loading, error, refresh } = useSiteData(),
     root = useRef(null),
     [failed, setFailed] = useState(false),
     [popup, setPopup] = useState(null);
@@ -513,7 +510,7 @@ export function HomeMap() {
             id="clientsMap"
             role="region"
             aria-label="Client locations map"
-            style={{ height: points.length && !failed ? 480 : 0 }}
+            style={{ height: points.length && !failed ? 480 : 0, display: points.length && !failed ? undefined : "none" }}
           />
           {!!points.length && <div className="map-locations" aria-label="Client locations">
             {points.map((row) => <button key={row._id} type="button" className="map-location"
@@ -544,15 +541,10 @@ export function HomeMap() {
               popup.container,
             )}
           {(!points.length || failed) && (
-            <p id="mapEmpty">
-              <T
-                text={
-                  failed
-                    ? "The map is unavailable right now."
-                    : "Client locations will appear here when published."
-                }
-              />
-            </p>
+            <ContentState compact state={loading ? "loading" : error || failed ? "error" : "empty"}
+              title={loading ? "Loading client locations…" : error || failed ? "Client locations are temporarily unavailable" : "Our client locations"}
+              description={error || failed ? "Please try again in a moment." : "Client locations will appear here when published."}
+              onAction={error && !loading ? () => refresh() : undefined} />
           )}
         </div>
       </section>

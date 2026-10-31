@@ -77,10 +77,17 @@ export default function SiteHeader() {
   const location = useLocation();
   const slug = usePageSlug();
   const header = useRef(null);
+  const closeTimer = useRef(null);
   const [dropdown, setDropdown] = useState(null);
   const [mobile, setMobile] = useState(false);
   const [mobileGroup, setMobileGroup] = useState(null);
+  const cancelClose = () => clearTimeout(closeTimer.current);
+  const openDropdown = (name) => {
+    cancelClose();
+    setDropdown(name);
+  };
   useEffect(() => {
+    clearTimeout(closeTimer.current);
     setDropdown(null);
     setMobile(false);
     setMobileGroup(null);
@@ -102,6 +109,7 @@ export default function SiteHeader() {
     document.addEventListener("keydown", escape);
     window.addEventListener("resize", resize);
     return () => {
+      clearTimeout(closeTimer.current);
       document.removeEventListener("click", close);
       document.removeEventListener("keydown", escape);
       window.removeEventListener("resize", resize);
@@ -163,21 +171,51 @@ export default function SiteHeader() {
                   <div
                     key={name}
                     className={`ndrop${name === "Services" ? " service-nav-group" : ""}${dropdown === name ? " open" : ""}`}
+                    onPointerEnter={(event) => {
+                      if (event.pointerType !== "touch" && matchMedia("(hover: hover)").matches) openDropdown(name);
+                    }}
+                    onPointerLeave={(event) => {
+                      if (event.pointerType === "touch") return;
+                      cancelClose();
+                      closeTimer.current = setTimeout(() => setDropdown((current) => current === name ? null : current), 220);
+                    }}
+                    onBlur={(event) => {
+                      if (!event.currentTarget.contains(event.relatedTarget)) {
+                        cancelClose();
+                        setDropdown((current) => current === name ? null : current);
+                      }
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === "ArrowDown" && event.target.classList.contains("nbtn")) {
+                        event.preventDefault();
+                        openDropdown(name);
+                        const group = event.currentTarget;
+                        requestAnimationFrame(() => group.querySelector(".drop a")?.focus());
+                      } else if (event.key === "Escape") {
+                        cancelClose();
+                        setDropdown(null);
+                        event.currentTarget.querySelector(".nbtn")?.focus();
+                      }
+                    }}
                   >
                     <button
                       className="nbtn"
                       type="button"
                       aria-expanded={dropdown === name}
                       aria-haspopup="true"
-                      onClick={() =>
-                        setDropdown(dropdown === name ? null : name)
-                      }
+                      aria-controls={`nav-${name.toLowerCase().replaceAll(" ", "-")}`}
+                      onClick={(event) => {
+                        cancelClose();
+                        setDropdown(event.detail && matchMedia("(hover: hover) and (pointer: fine)").matches
+                          ? name : dropdown === name ? null : name);
+                      }}
                     >
                       <T>{name}</T>
                       <Arrow />
                     </button>
                     <div
                       className={`drop${name === "Services" ? " service-menu" : ""}`}
+                      id={`nav-${name.toLowerCase().replaceAll(" ", "-")}`}
                     >
                       <T>
                         {name === "Services" ? (

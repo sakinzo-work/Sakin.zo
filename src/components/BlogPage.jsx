@@ -8,6 +8,7 @@ import PageHero from "./PageHero.jsx";
 import Markdown from "./Markdown.jsx";
 import { parseMarkdown } from "../lib/markdown.js";
 import useRemoteData from "../hooks/useRemoteData.js";
+import ContentState from "./ContentState.jsx";
 import useDocumentMeta from "../hooks/useDocumentMeta.js";
 import { mediaUrl } from "../lib/api.js";
 import covers from "../data/page-covers.js";
@@ -261,16 +262,9 @@ export default function BlogPage() {
                   </div>
                   <T>
                     {loading ? (
-                      <div className="empty" role="status">
-                        <T>{" Loading blog posts... "}</T>
-                      </div>
+                      <ContentState state="loading" title="Loading articles…" description="Our latest ideas will be ready in a moment." />
                     ) : error ? (
-                      <div className="empty" role="alert">
-                        <T>{" Unable to load blogs right now."}</T>{" "}
-                        <button type="button" onClick={refresh}>
-                          <T>{" Try again "}</T>
-                        </button>
-                      </div>
+                      <ContentState state="error" title="Articles are temporarily unavailable" description="Please try again in a moment." onAction={refresh} />
                     ) : posts.length ? (
                       <div className="blog-grid">
                         <T>
@@ -280,13 +274,7 @@ export default function BlogPage() {
                         </T>
                       </div>
                     ) : (
-                      <div className="empty">
-                        <T>
-                          {
-                            " No published blogs yet. Add one from the admin panel. "
-                          }
-                        </T>
-                      </div>
+                      <ContentState title="New ideas are on the way" description="Our latest articles will appear here soon." />
                     )}
                   </T>
                 </div>

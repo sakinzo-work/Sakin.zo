@@ -37,6 +37,7 @@ export function SiteDataProvider({ children }) {
     }
   });
   const refresh = useCallback(async (signal) => {
+    setState((previous) => ({ ...previous, loading: true, error: null }));
     try {
       const data = await getJson("/public/site-data", signal);
       if (signal?.aborted) return;

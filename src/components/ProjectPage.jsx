@@ -6,6 +6,7 @@ import { Logo } from "./SiteHeader.jsx";
 import PageHero from "./PageHero.jsx";
 import Markdown from "./Markdown.jsx";
 import useRemoteData from "../hooks/useRemoteData.js";
+import ContentState from "./ContentState.jsx";
 import useDocumentMeta from "../hooks/useDocumentMeta.js";
 import { mediaUrl, safeUrl } from "../lib/api.js";
 import {
@@ -479,7 +480,7 @@ export default function ProjectPage() {
     ready: true,
     id: id || query.get("id"),
   };
-  const { data, loading, error } = useRemoteData(
+  const { data, loading, error, refresh } = useRemoteData(
     selection.id ? `/projects/${encodeURIComponent(selection.id)}` : null,
   );
   const missing = selection.ready && !selection.id;
@@ -499,17 +500,11 @@ export default function ProjectPage() {
           {data ? (
             <Project project={data} key={data._id || selection.id} />
           ) : missing || error ? (
-            <div className="state">
-              <h1>
-                <T>
-                  {missing || error?.status === 404
-                    ? "Project not found"
-                    : "Could not load project"}
-                </T>
-              </h1>
-              <p>
-                <T>{missing ? "No project was selected." : error.message}</T>
-              </p>
+            <div className="wrap project-state-wrap">
+              <ContentState heading="h1" state={missing || error?.status === 404 ? "empty" : "error"}
+                title={missing || error?.status === 404 ? "Project not found" : "Project details are temporarily unavailable"}
+                description={missing || error?.status === 404 ? "Explore our other projects to see what we've been building." : "Please try again in a moment."}
+                onAction={!missing && error?.status !== 404 ? refresh : undefined} />
               <p>
                 <RouteLink
                   href="/#sec-projects"
@@ -522,9 +517,7 @@ export default function ProjectPage() {
               </p>
             </div>
           ) : (
-            <div className="state" role="status">
-              <T>{" Loading project\u2026 "}</T>
-            </div>
+            <div className="wrap project-state-wrap"><ContentState state="loading" title="Loading project…" description="Project details will be ready in a moment." /></div>
           )}
         </T>
       </main>
