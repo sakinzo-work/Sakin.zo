@@ -22,7 +22,7 @@ await fs.writeFile(
 );
 const env = loadEnv("production", root, "");
 const site = (
-  env.VITE_SITE_URL || "https://sakinzo-work.github.io/sakinzo/frontend/"
+  env.VITE_SITE_URL || "https://sakinzo-work.github.io/Sakin.zo/"
 ).replace(/\/?$/, "/");
 const routes = JSON.parse(
   await fs.readFile(path.join(root, "src/data/routes.json"), "utf8"),
