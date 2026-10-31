@@ -21,8 +21,10 @@ await fs.writeFile(
     .replace("__REACT_BUILD_VERSION__", version),
 );
 const env = loadEnv("production", root, "");
+const vercelHost = env.VERCEL_PROJECT_PRODUCTION_URL || env.VERCEL_URL;
 const site = (
-  env.VITE_SITE_URL || "https://sakinzo-work.github.io/Sakin.zo/"
+  env.VITE_SITE_URL ||
+  (vercelHost ? `https://${vercelHost}` : "https://sakinzo-work.github.io/Sakin.zo/")
 ).replace(/\/?$/, "/");
 const routes = JSON.parse(
   await fs.readFile(path.join(root, "src/data/routes.json"), "utf8"),

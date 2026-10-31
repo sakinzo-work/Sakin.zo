@@ -80,6 +80,26 @@ The production app is in `dist/`. The build also generates the admin PWA cache a
 
 ## Hosting
 
+### Vercel frontend with the existing Render backend
+
+Import `sakinzo-work/Sakin.zo` into Vercel with Root Directory `./` and production branch `main`. `vercel.json` sets the Vite preset, `npm ci`, `npm run build`, the `dist` output and the React route fallback. Select Node.js 22.x in the project settings.
+
+In **Vercel > Project > Settings > Environment Variables**, these optional explicit frontend values can be added for Production and Preview:
+
+| Name | Value |
+| --- | --- |
+| `VITE_BASE_PATH` | `/` |
+| `VITE_API_BASE` | `https://sakinzo.onrender.com/api` |
+| `VITE_SITE_URL` | Your final public website URL, for example `https://your-project.vercel.app/` |
+
+The first two already have these defaults. If `VITE_SITE_URL` is blank, the build uses Vercel's production domain automatically (enable access to System Environment Variables). A manually configured `VITE_SITE_URL` takes priority, which is useful with a custom domain. Redeploy after changing Vercel environment variables.
+
+In **Render > sakinzo backend > Environment**, edit `CLIENT_ORIGIN`: keep existing origins and append the final frontend origin separated by a comma, for example `https://sakinzo-work.github.io,https://your-project.vercel.app`. Origins must contain `https://` and have no trailing slash or path. Save/redeploy the Render service. If preview URLs also need API access, add each required preview origin explicitly. Do not allow every `vercel.app` site.
+
+The database, uploads and authentication stay on Render. MongoDB, JWT, mail and translation secrets belong in Render's backend environment, never in frontend `VITE_*` variables. `.vercelignore` keeps the optional backend and private local environment files out of frontend CLI uploads.
+
+### GitHub Pages
+
 The repository root is the React project. `.github/workflows/pages.yml` builds and deploys `dist/` to https://sakinzo-work.github.io/Sakin.zo/ on pushes to `main`. It sets the `/Sakin.zo/` asset/router base, connects to the existing Render API and provides the React shell for direct route visits.
 
 Serve `dist/` using a host that falls back to `index.html` for application routes. Vite preview already does this; `public/_redirects` supplies the equivalent rule for hosts that support that format. The default Render API must allow your deployed website's origin in its CORS settings, just as it does for the original GitHub Pages site.

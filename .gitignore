@@ -1,8 +1,10 @@
 node_modules/
 dist/
 .cache/
+.vercel/
 .env
 .env.local
+.env.*.local
 backend/.env
 backend/uploads/*
 !backend/uploads/.gitkeep
