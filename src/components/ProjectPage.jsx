@@ -499,12 +499,7 @@ export default function ProjectPage() {
   const missing = selection.ready && (!routeValue || (!selected && !legacyId && !siteLoading && !siteError));
   return (
     <>
-      <SiteHeader />
-      <div className="project-back-wrap">
-        <RouteLink className="project-back" href="/#sec-projects">
-          <T>{" \u2190 All projects "}</T>
-        </RouteLink>
-      </div>
+      <SiteHeader projectBack />
       <main id="app">
         {data && (loading || error) && <div className="wrap remote-refresh-note"><ContentState compact state={error ? "error" : "loading"}
           title={error ? "Showing saved project details" : "Updating project details…"} description="You can keep exploring while we check for the latest updates."

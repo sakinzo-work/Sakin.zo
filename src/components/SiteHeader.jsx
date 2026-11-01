@@ -73,7 +73,7 @@ function Arrow() {
     </svg>
   );
 }
-export default function SiteHeader() {
+export default function SiteHeader({ projectBack = false }) {
   const location = useLocation();
   const slug = usePageSlug();
   const header = useRef(null);
@@ -321,9 +321,15 @@ export default function SiteHeader() {
           </Localized>
           <div className="hdr-right">
             <LanguagePicker />
-            <RouteLink className="btn-git" href="/contact#form-section">
-              <T>{" Get in touch "}</T>
-            </RouteLink>
+            {projectBack ? (
+              <RouteLink className="btn-git" href="/#sec-projects">
+                <T>{" ← All projects "}</T>
+              </RouteLink>
+            ) : (
+              <RouteLink className="btn-git" href="/contact#form-section">
+                <T>{" Get in touch "}</T>
+              </RouteLink>
+            )}
           </div>
           <Localized>
             <button
@@ -406,11 +412,11 @@ export default function SiteHeader() {
           ))}
         </T>
         <RouteLink
-          href="/contact#form-section"
+          href={projectBack ? "/#sec-projects" : "/contact#form-section"}
           className="mob-cta"
           onClick={() => setMobile(false)}
         >
-          <T>{" Get in touch "}</T>
+          <T>{projectBack ? " ← All projects " : " Get in touch "}</T>
         </RouteLink>
       </div>
     </>

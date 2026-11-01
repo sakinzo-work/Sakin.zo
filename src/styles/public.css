@@ -11,17 +11,11 @@ body:not([data-page]) .route-loading .content-state-action { min-height: 44px; p
 .blog-image-fallback svg { width: 56px; height: 56px; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
 .blog-article-state { box-sizing: border-box; width: 100%; max-width: 900px; margin: 0 auto; padding: 120px 24px 80px; }
 .blog-back-link { display: block; width: fit-content; margin: 24px auto 0; color: #1673ff; font: 600 14px/1.6 Inter, Arial, sans-serif; text-decoration: none; }
-.project-back-wrap { box-sizing: border-box; width: min(1180px, calc(100% - 48px)); margin: 18px auto 0; }
-.project-back { display: inline-flex; align-items: center; min-height: 36px; color: #1673ff; font: 600 13px/1.5 Inter, Arial, sans-serif; text-decoration: none; }
-.project-back:hover { color: #0d55c2; text-decoration: underline; text-underline-offset: 3px; }
-/* Project pages use the fixed shared header, so keep the return link below it. */
+/* Keep the shared project header aligned with the main site navigation. */
 body[data-page="project"] .hdr[data-react-header] { width: 100%; height: 68px; box-sizing: border-box; }
 body[data-page="project"] .hdr[data-react-header] .hdr-inner { width: 100%; box-sizing: border-box; justify-content: space-between; }
 body[data-page="project"] .hdr[data-react-header] nav { min-width: 0; }
-body[data-page="project"] .project-back-wrap { width: 100%; min-height: 48px; margin: 68px 0 0; padding: 0 max(24px, calc((100% - 1180px) / 2)); display: flex; align-items: center; background: #f6f8fc; border-bottom: 1px solid #e3eaf4; }
-body[data-page="project"] .project-back { min-height: 40px; padding: 0 4px; font-size: 14px; }
 @media (max-width: 600px) {
-  body[data-page="project"] .project-back-wrap { min-height: 44px; padding-inline: 18px; }
   body[data-page="project"] .hdr[data-react-header] .hdr-inner { padding-inline: 16px; }
 }
 body[data-page="index"] .svc-heading { margin: 0; }
