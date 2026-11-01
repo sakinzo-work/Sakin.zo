@@ -1069,7 +1069,7 @@ await test("legacy Render blog covers and insight links work locally across ever
       await card.scrollIntoViewIfNeeded();
       assert.equal(await card.locator("img").getAttribute("src"), "/assets/" + posts[index].coverImage.split("/assets/")[1]);
       await card.locator("img").evaluate(image => image.decode());
-      assert.equal(await card.locator("a").getAttribute("href"), `/blog?slug=${posts[index].slug}`);
+      assert.equal(await card.locator("a").getAttribute("href"), `/blog/${posts[index].slug}`);
       assert.equal(await card.locator("a").getAttribute("target"), null);
     }
     const externalLink = page.locator('#main-insights-grid a[href="https://example.test/article"]');
@@ -1085,7 +1085,7 @@ await test("legacy Render blog covers and insight links work locally across ever
         await image.evaluate(node => node.decode());
       }
       for (const post of posts) {
-        await page.locator(`.post-card a[href="/blog?slug=${post.slug}"]`).click();
+        await page.locator(`.post-card a[href="/blog/${post.slug}"]`).click();
         await page.getByRole("heading", { name: post.title, exact: true }).waitFor();
         await page.locator(".article-cover").evaluate(image => image.decode());
         await page.locator(".page-hero-image").evaluate(image => image.decode());
@@ -1549,6 +1549,85 @@ await test("managers cannot review their own pending request", async () => {
     await open("/admin/approvals");
     await page.locator(".approval-card").waitFor();
     assert.equal(await page.getByRole("button", { name: /^(Approve|Reject)$/ }).count(), 0);
+    assert.deepEqual(errors, []);
+  } finally { await close(); }
+});
+
+await test("phone navigation stays readable, scrolls long service lists and closes without locking the page", async () => {
+  const { page, open, errors, close } = await session();
+  try {
+    for (const [width, height, route] of [[390,844,"/"], [320,740,"/contact"], [430,932,"/qa-testing"], [844,390,"/blog"], [390,844,"/who-we-are"]]) {
+      await page.setViewportSize({ width, height });
+      await open(route);
+      const toggle = page.locator("#hamburger"), menu = page.getByRole("navigation", { name: "Mobile navigation", exact: true });
+      await toggle.click();
+      await menu.waitFor({ state: "visible" });
+      assert.equal(await toggle.getAttribute("aria-expanded"), "true");
+      assert.equal(await page.locator("body").evaluate(body => body.style.overflow), "hidden");
+      const colours = await menu.evaluate(element => {
+        const link = element.querySelector(".mob-link"), style = getComputedStyle(element);
+        return { background: style.backgroundColor, opacity: style.opacity, link: getComputedStyle(link).color };
+      });
+      assert.equal(colours.background, "rgb(7, 19, 38)");
+      assert.equal(colours.opacity, "1");
+      assert.equal(colours.link, "rgb(242, 246, 255)");
+      const menuBox = await menu.boundingBox(), headerBox = await page.locator("header[data-react-header]").boundingBox();
+      assert.ok(Math.abs(menuBox.y - headerBox.y - headerBox.height) < 2);
+      assert.ok(menuBox.y + menuBox.height <= height + 2);
+      await menu.getByRole("button", { name: "Services", exact: true }).click();
+      const lastService = menu.getByRole("link", { name: "Business Analysis", exact: true });
+      await lastService.scrollIntoViewIfNeeded();
+      assert.ok(await lastService.isVisible());
+      assert.ok(await menu.evaluate(element => element.scrollHeight > element.clientHeight));
+      assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+      if (width === 390 && route === "/") await page.screenshot({ path: path.join(root, "test-results/phone-menu-services.png") });
+      await menu.getByRole("button", { name: "About Us", exact: true }).click();
+      assert.equal(await menu.locator(".mob-sub.open").count(), 1);
+      await page.keyboard.press("Escape");
+      await menu.waitFor({ state: "hidden" });
+      assert.notEqual(await page.locator("body").evaluate(body => body.style.overflow), "hidden");
+      assert.equal(await page.evaluate(() => document.activeElement.id), "hamburger");
+      await toggle.click();
+      if (width === 390 && route === "/") await page.screenshot({ path: path.join(root, "test-results/phone-menu-collapsed.png") });
+      await menu.getByRole("button", { name: "Services", exact: true }).click();
+      await menu.getByRole("link", { name: "QA & Testing", exact: true }).click();
+      await page.waitForURL("**/qa-testing");
+      assert.equal(await page.locator("#hamburger").getAttribute("aria-expanded"), "false");
+      assert.notEqual(await page.locator("body").evaluate(body => body.style.overflow), "hidden");
+    }
+    await page.locator("#hamburger").click();
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await page.getByRole("navigation", { name: "Mobile navigation", exact: true }).waitFor({ state: "hidden" });
+    assert.notEqual(await page.locator("body").evaluate(body => body.style.overflow), "hidden");
+    assert.deepEqual(errors, []);
+  } finally { await close(); }
+});
+
+await test("SEO metadata remains unique across React navigation, articles, tracking parameters and private pages", async () => {
+  const { page, open, errors, close } = await session();
+  try {
+    await open("/?utm_source=instagram&lang=en");
+    await page.waitForFunction(() => document.title.includes("Mumbai"));
+    for (const [route, suffix, title] of [["/web-mobile-development?utm_source=instagram", "/web-mobile-development", "Web & Mobile"], ["/blog?slug=engineering-guide&utm_source=share", "/blog/engineering-guide", article.title], ["/projects/project-fixture?fbclid=test", "/projects/project-fixture", project.title]]) {
+      await open(route);
+      await page.waitForFunction(title => document.title.includes(title), title);
+      assert.equal(await page.locator("head title").count(), 1);
+      assert.equal(await page.locator('head meta[name="description"]').count(), 1);
+      assert.equal(await page.locator('head link[rel="canonical"]').count(), 1);
+      const canonical = await page.locator('head link[rel="canonical"]').getAttribute("href");
+      assert.ok(canonical.endsWith(suffix));
+      assert.ok(!canonical.includes("utm_") && !canonical.includes("fbclid"));
+      assert.equal(await page.locator('head meta[property="og:url"]').getAttribute("content"), canonical);
+      assert.equal(await page.locator('head script[data-site-seo]').count(), 1);
+      const graph = await page.locator('head script[data-site-seo]').evaluate(element => JSON.parse(element.textContent)["@graph"]);
+      assert.ok(graph.some(entity => entity["@type"] === "Organization" && entity.email === "sakinzo.work@gmail.com"));
+    }
+    await page.goto(origin + "/does-not-exist");
+    await page.getByRole("heading", { name: "Page not found", exact: true }).waitFor();
+    assert.ok((await page.locator('head meta[name="robots"]').getAttribute("content")).includes("noindex"));
+    await open("/admin");
+    await page.locator("#loginForm").waitFor();
+    assert.ok((await page.locator('head meta[name="robots"]').getAttribute("content")).includes("noindex"));
     assert.deepEqual(errors, []);
   } finally { await close(); }
 });

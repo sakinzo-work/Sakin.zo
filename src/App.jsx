@@ -83,11 +83,13 @@ function Fallback() {
       return <Navigate to={destination} replace />;
   }
   return (
+    <MetadataProvider slug="not-found">
     <main className="react-not-found">
       <h1>Page not found</h1>
       <p>The requested page is unavailable.</p>
       <a href={import.meta.env.BASE_URL}>Return to home</a>
     </main>
+    </MetadataProvider>
   );
 }
 export default function App() {

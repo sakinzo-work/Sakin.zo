@@ -77,10 +77,12 @@ export default function SiteHeader() {
   const location = useLocation();
   const slug = usePageSlug();
   const header = useRef(null);
+  const mobileMenu = useRef(null);
   const closeTimer = useRef(null);
   const [dropdown, setDropdown] = useState(null);
   const [mobile, setMobile] = useState(false);
   const [mobileGroup, setMobileGroup] = useState(null);
+  const [menuTop, setMenuTop] = useState(68);
   const cancelClose = () => clearTimeout(closeTimer.current);
   const openDropdown = (name) => {
     cancelClose();
@@ -91,7 +93,7 @@ export default function SiteHeader() {
     setDropdown(null);
     setMobile(false);
     setMobileGroup(null);
-  }, [location.pathname]);
+  }, [location.pathname, location.search, location.hash]);
   useEffect(() => {
     const close = (event) => {
       if (!header.current?.contains(event.target)) setDropdown(null);
@@ -118,9 +120,50 @@ export default function SiteHeader() {
   useEffect(() => {
     if (!mobile) return;
     const previous = document.body.style.overflow;
+    const trigger = document.activeElement;
     document.body.style.overflow = "hidden";
+    const measure = () =>
+      setMenuTop(
+        Math.max(0, header.current?.getBoundingClientRect().bottom || 68),
+      );
+    measure();
+    const observer = new ResizeObserver(measure);
+    if (header.current) observer.observe(header.current);
+    window.visualViewport?.addEventListener("resize", measure);
+    const frame = requestAnimationFrame(() =>
+      mobileMenu.current
+        ?.querySelector("button")
+        ?.focus({ preventScroll: true }),
+    );
+    const trapFocus = (event) => {
+      if (event.key !== "Tab") return;
+      const controls = [
+        ...header.current.querySelectorAll("a,button,input"),
+        ...mobileMenu.current.querySelectorAll("a,button,input"),
+      ].filter(
+        (element) =>
+          element.getClientRects().length &&
+          !element.disabled &&
+          element.tabIndex !== -1,
+      );
+      const first = controls[0],
+        last = controls[controls.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last?.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first?.focus();
+      }
+    };
+    document.addEventListener("keydown", trapFocus);
     return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+      window.visualViewport?.removeEventListener("resize", measure);
+      document.removeEventListener("keydown", trapFocus);
       document.body.style.overflow = previous;
+      if (trigger?.isConnected) trigger.focus({ preventScroll: true });
     };
   }, [mobile]);
   const link = ([name, href]) => (
@@ -172,25 +215,42 @@ export default function SiteHeader() {
                     key={name}
                     className={`ndrop${name === "Services" ? " service-nav-group" : ""}${dropdown === name ? " open" : ""}`}
                     onPointerEnter={(event) => {
-                      if (event.pointerType !== "touch" && matchMedia("(hover: hover)").matches) openDropdown(name);
+                      if (
+                        event.pointerType !== "touch" &&
+                        matchMedia("(hover: hover)").matches
+                      )
+                        openDropdown(name);
                     }}
                     onPointerLeave={(event) => {
                       if (event.pointerType === "touch") return;
                       cancelClose();
-                      closeTimer.current = setTimeout(() => setDropdown((current) => current === name ? null : current), 220);
+                      closeTimer.current = setTimeout(
+                        () =>
+                          setDropdown((current) =>
+                            current === name ? null : current,
+                          ),
+                        220,
+                      );
                     }}
                     onBlur={(event) => {
                       if (!event.currentTarget.contains(event.relatedTarget)) {
                         cancelClose();
-                        setDropdown((current) => current === name ? null : current);
+                        setDropdown((current) =>
+                          current === name ? null : current,
+                        );
                       }
                     }}
                     onKeyDown={(event) => {
-                      if (event.key === "ArrowDown" && event.target.classList.contains("nbtn")) {
+                      if (
+                        event.key === "ArrowDown" &&
+                        event.target.classList.contains("nbtn")
+                      ) {
                         event.preventDefault();
                         openDropdown(name);
                         const group = event.currentTarget;
-                        requestAnimationFrame(() => group.querySelector(".drop a")?.focus());
+                        requestAnimationFrame(() =>
+                          group.querySelector(".drop a")?.focus(),
+                        );
                       } else if (event.key === "Escape") {
                         cancelClose();
                         setDropdown(null);
@@ -206,8 +266,15 @@ export default function SiteHeader() {
                       aria-controls={`nav-${name.toLowerCase().replaceAll(" ", "-")}`}
                       onClick={(event) => {
                         cancelClose();
-                        setDropdown(event.detail && matchMedia("(hover: hover) and (pointer: fine)").matches
-                          ? name : dropdown === name ? null : name);
+                        setDropdown(
+                          event.detail &&
+                            matchMedia("(hover: hover) and (pointer: fine)")
+                              .matches
+                            ? name
+                            : dropdown === name
+                              ? null
+                              : name,
+                        );
                       }}
                     >
                       <T>{name}</T>
@@ -279,6 +346,11 @@ export default function SiteHeader() {
         className={`mobile-menu${mobile ? " open" : ""}`}
         id="mobileMenu"
         data-react-mobile=""
+        role="navigation"
+        aria-label="Mobile navigation"
+        hidden={!mobile}
+        ref={mobileMenu}
+        style={{ "--mobile-menu-top": `${menuTop}px` }}
       >
         <T>
           {Object.entries(links).map(([name, items]) => (
@@ -288,6 +360,7 @@ export default function SiteHeader() {
                 type="button"
                 data-mobile-toggle=""
                 aria-expanded={mobileGroup === name}
+                aria-controls={`mobile-group-${name.toLowerCase().replaceAll(" ", "-")}`}
                 onClick={() =>
                   setMobileGroup(mobileGroup === name ? null : name)
                 }
@@ -297,6 +370,8 @@ export default function SiteHeader() {
               </button>
               <div
                 className={`mob-sub${mobileGroup === name ? " open" : ""}`}
+                id={`mobile-group-${name.toLowerCase().replaceAll(" ", "-")}`}
+                hidden={mobileGroup !== name}
                 onClick={(event) => {
                   if (event.target.closest("a")) setMobile(false);
                 }}

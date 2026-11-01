@@ -24,7 +24,18 @@ export function appPath(value = "") {
     ad: "admin",
     project: "projects",
   };
-  return "/" + (aliases[slug] ?? slug) + rest;
+  const route = aliases[slug] ?? slug;
+  if (["blog", "projects"].includes(route) && rest.startsWith("?")) {
+    const [search, hash = ""] = rest.slice(1).split("#");
+    const params = new URLSearchParams(search), key = route === "blog" ? "slug" : "id";
+    if (params.get(key)) {
+      const item = params.get(key);
+      params.delete(key);
+      const remaining = params.toString();
+      return `/${route}/${encodeURIComponent(item)}${remaining ? `?${remaining}` : ""}${hash ? `#${hash}` : ""}`;
+    }
+  }
+  return "/" + route + rest;
 }
 export const assetUrl = (value) => {
   const migrated = legacySitePath(value);
