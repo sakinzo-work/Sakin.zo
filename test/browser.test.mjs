@@ -1153,6 +1153,68 @@ await test("missing blog images have a cover fallback and article URLs have load
   } finally { release(); await close(); }
 });
 
+await test("homepage service illustrations, panels and plus/minus controls stay synchronized", async () => {
+  const { page, open, errors, close } = await session();
+  const items = [
+    ["web-mobile-development", "Web and Mobile Development"],
+    ["devops-solutions", "DevOps Solutions"],
+    ["architecture-design", "Architecture Design"],
+    ["poc-mvp-development", "PoC, Prototype, MVP"],
+    ["qa-testing", "QA & Testing"],
+    ["ux-ui-design", "UX/UI Design"],
+    ["business-analysis", "BA"],
+  ];
+  try {
+    await open("/");
+    const section = page.locator("#sec-services");
+    const artwork = section.locator("#svcSvg");
+    const drawings = new Set();
+    for (const width of [1440, 1025, 390, 320]) {
+      await page.setViewportSize({ width, height: 1000 });
+      for (const [slug, title] of items) {
+        const trigger = section.getByRole("button", { name: title, exact: true });
+        await trigger.click();
+        assert.equal(await trigger.getAttribute("aria-expanded"), "true");
+        assert.equal(await section.locator('.svc-head[aria-expanded="true"]').count(), 1);
+        assert.equal(await section.locator(".svc-item.open").count(), 1);
+        assert.equal(await section.locator(".svc-item.open .svc-tog").textContent(), "−");
+        assert.deepEqual(await section.locator(".svc-item:not(.open) .svc-tog").allTextContents(), Array(6).fill("+"));
+        assert.equal(await artwork.getAttribute("data-service"), slug);
+        const panel = section.locator(`#${await trigger.getAttribute("aria-controls")}`);
+        assert.ok(await panel.isVisible());
+        assert.equal(await panel.getAttribute("aria-labelledby"), await trigger.getAttribute("id"));
+        assert.equal(await section.locator(".svc-body:visible").count(), 1);
+        assert.equal(await panel.locator("a").getAttribute("href"), `/${slug}`);
+        assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `${slug} overflows at ${width}`);
+        if (width === 1440) {
+          assert.ok(await artwork.isVisible());
+          assert.equal(await artwork.locator("title").textContent(), title);
+          drawings.add(await artwork.evaluate(svg => [...svg.querySelectorAll("path,rect,circle,ellipse")].map(shape => [...shape.attributes].map(attr => `${attr.name}=${attr.value}`).join(";")).join("|")));
+          await section.locator("#svcImg").screenshot({ path: path.join(root, `test-results/service-art-${slug}.png`) });
+        }
+      }
+    }
+    assert.equal(drawings.size, 7, "Every service needs its own illustration");
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    const qa = section.getByRole("button", { name: "QA & Testing", exact: true });
+    await qa.focus();
+    await page.keyboard.press("Enter");
+    assert.equal(await artwork.getAttribute("data-service"), "qa-testing");
+    const devops = section.getByRole("button", { name: "DevOps Solutions", exact: true });
+    await devops.focus();
+    await page.keyboard.press("Space");
+    assert.equal(await artwork.getAttribute("data-service"), "devops-solutions");
+    await devops.click();
+    assert.equal(await devops.getAttribute("aria-expanded"), "true");
+    await section.screenshot({ path: path.join(root, "test-results/services-synchronized-desktop.png") });
+    await section.locator('.svc-item.open a[href="/devops-solutions"]').focus();
+    await page.keyboard.press("Enter");
+    await page.waitForURL("**/devops-solutions");
+    await page.getByRole("heading", { name: services.find(service => service.slug === "devops-solutions").headline, exact: true }).waitFor();
+    assert.deepEqual(errors, []);
+  } finally { await close(); }
+});
+
 await browser.close();
 await new Promise((resolve) => {
   server.close(resolve);
