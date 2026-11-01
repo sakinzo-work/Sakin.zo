@@ -7,6 +7,7 @@ import {
   seoDocument,
   sitemapXml,
 } from "../scripts/seo-document.mjs";
+import { contentSlug } from "../src/lib/content-slugs.js";
 
 let files,
   snapshot,
@@ -49,12 +50,14 @@ async function liveContent(catalog) {
 function cachedContent(catalog, lookup) {
   const data = snapshot || catalog.content;
   const rows = data?.[lookup?.kind === "blog" ? "blogs" : "projects"] || [];
+  const contentKind = lookup?.kind === "blog" ? "blog" : "project";
   const known = lookup
     ? rows.some(
         (row) =>
           row.visible !== false &&
-          String(lookup.kind === "blog" ? row.slug || row._id : row._id) ===
-            lookup.value,
+          (String(row._id || "") === lookup.value ||
+            (lookup.kind === "blog" && String(row.slug || "") === lookup.value) ||
+            contentSlug(row, rows, contentKind) === lookup.value),
       )
     : data?.blogs?.length || data?.projects?.length;
   if (known) {
@@ -116,18 +119,29 @@ export function createPageHandler({
     const valid = /^[\p{L}\p{N}][\p{L}\p{N}._-]{0,199}$/u.test(value);
     if (["blog", "project"].includes(kind) && valid) {
       const content = await contentFor(catalog, { kind, value });
-      const row = (
-        content.data[kind === "blog" ? "blogs" : "projects"] || []
-      ).find(
+      const rows = content.data[kind === "blog" ? "blogs" : "projects"] || [];
+      const row = rows.find(
         (row) =>
           row.visible !== false &&
-          String(kind === "blog" ? row.slug || row._id : row._id) === value,
+          (String(row._id || "") === value ||
+            (kind === "blog" && String(row.slug || "") === value) ||
+            contentSlug(row, rows, kind) === value),
       );
       if (row) {
+        const canonicalSlug = contentSlug(row, rows, kind);
+        if (value !== canonicalSlug) {
+          const destination = new URL(
+            `${kind === "blog" ? "blog" : "projects"}/${encodeURIComponent(canonicalSlug)}`,
+            catalog.siteUrl,
+          );
+          if (query.lang) destination.searchParams.set("lang", query.lang);
+          response.setHeader("Location", destination.href);
+          return response.status(308).end();
+        }
         const seo = routeSeo(
           catalog,
           kind === "blog" ? "blog" : "project",
-          `/${kind === "blog" ? "blog" : "projects"}/${encodeURIComponent(value)}`,
+          `/${kind === "blog" ? "blog" : "projects"}/${encodeURIComponent(canonicalSlug)}`,
           row,
           kind,
         );

@@ -10,6 +10,7 @@ import FooterColumn from "../components/FooterColumn.jsx";
 import { useSiteData } from "../context/SiteDataContext.jsx";
 import { FooterContactForm } from "../features/contact/ContactForms.jsx";
 import localBlogPosts from "../../content/blogs/posts.json";
+import { contentPath } from "../lib/content-slugs.js";
 import {
   HomeSection,
   HomeStats,
@@ -2135,7 +2136,7 @@ export default function Page() {
               {"\n                    "}
               <div className={"ft-col-links"}>
                 {(site.blogs?.length ? site.blogs.slice(0, 6) : localBlogPosts).map((post) => (
-                  <RouteLink key={post._id || post.slug} href={`/blog/${encodeURIComponent(post.slug || post._id)}`}>
+                  <RouteLink key={post._id || post.slug} href={contentPath("blog", post, site.blogs?.length ? site.blogs : localBlogPosts)}>
                     <T>{post.title}</T>
                   </RouteLink>
                 ))}

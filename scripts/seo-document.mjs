@@ -1,4 +1,5 @@
 import { createSeo, detailMetadata, siteAddress } from "../src/lib/seo.js";
+import { contentSlug } from "../src/lib/content-slugs.js";
 
 export const escapeHtml = (value) =>
   String(value ?? "").replace(
@@ -108,11 +109,17 @@ export function contentEntries(data, siteUrl) {
   ]) {
     for (const row of Array.isArray(rows) ? rows : []) {
       if (row.visible === false) continue;
-      const id = kind === "blog" ? row.slug || row._id : row._id;
-      if (!id) continue;
+      const slug = contentSlug(
+        row,
+        Array.isArray(data?.[kind === "blog" ? "blogs" : "projects"])
+          ? data[kind === "blog" ? "blogs" : "projects"]
+          : [],
+        kind === "blog" ? "blog" : "project",
+      );
+      if (!slug) continue;
       const updated = row.updatedAt || row.publishedAt;
       entries.push({
-        url: new URL(`${kind}/${encodeURIComponent(id)}`, base).href,
+        url: new URL(`${kind}/${encodeURIComponent(slug)}`, base).href,
         ...(updated && !Number.isNaN(Date.parse(updated))
           ? { modified: new Date(updated).toISOString() }
           : {}),

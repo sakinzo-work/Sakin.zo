@@ -13,6 +13,7 @@ import BlogImage from "./BlogImage.jsx";
 import useDocumentMeta from "../hooks/useDocumentMeta.js";
 import { mediaUrl } from "../lib/api.js";
 import covers from "../data/page-covers.js";
+import { contentPath, contentSlug } from "../lib/content-slugs.js";
 import { useParams, useSearchParams } from "react-router-dom";
 const formatDate = (value) =>
   value
@@ -22,11 +23,11 @@ const formatDate = (value) =>
         year: "numeric",
       })
     : "";
-function PostCard({ post }) {
+function PostCard({ post, posts }) {
   return (
     <article className="post-card">
       <RouteLink
-        href={`/blog/${encodeURIComponent(post.slug || post._id)}`}
+        href={contentPath("blog", post, posts)}
       >
         <div className="post-cover">
           <T>
@@ -211,7 +212,7 @@ export default function BlogPage() {
   const slug = params.slug || query.get("slug") || query.get("id") || "";
   const posts = Array.isArray(data) ? data : [];
   const post = slug
-    ? posts.find((item) => item.slug === slug || String(item._id) === slug)
+    ? posts.find((item) => item.slug === slug || String(item._id) === slug || contentSlug(item, posts, "blog") === slug)
     : null;
   return (
     <>
@@ -282,7 +283,7 @@ export default function BlogPage() {
                       <div className="blog-grid">
                         <T>
                           {posts.map((item) => (
-                            <PostCard key={item._id || item.slug} post={item} />
+                            <PostCard key={item._id || item.slug} post={item} posts={posts} />
                           ))}
                         </T>
                       </div>

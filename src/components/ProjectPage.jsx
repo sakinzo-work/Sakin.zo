@@ -20,6 +20,8 @@ import {
 import covers from "../data/page-covers.js";
 import { useParams, useSearchParams } from "react-router-dom";
 import SiteFooter from "./SiteFooter.jsx";
+import { useSiteData, visibleItems } from "../context/SiteDataContext.jsx";
+import { contentSlug } from "../lib/content-slugs.js";
 function Gallery({ images, title }) {
   const [slide, setSlide] = useState(0);
   useEffect(() => {
@@ -475,14 +477,26 @@ function Project({ project }) {
 export default function ProjectPage() {
   const { id } = useParams();
   const [query] = useSearchParams();
+  const { site, loading: siteLoading, error: siteError, refresh: refreshSite } = useSiteData();
+  const projects = visibleItems(site.projects);
+  const routeValue = id || query.get("id") || "";
+  const selected = projects.find(
+    (project) =>
+      String(project._id || "") === routeValue ||
+      contentSlug(project, projects, "project") === routeValue,
+  );
+  const legacyId = /^[a-f\d]{24}$/i.test(routeValue);
+  const projectId = selected?._id || (legacyId ? routeValue : "");
   const selection = {
     ready: true,
-    id: id || query.get("id"),
+    id: projectId,
   };
   const { data, loading, error, refresh } = useRemoteData(
     selection.id ? `/projects/${encodeURIComponent(selection.id)}` : null,
   );
-  const missing = selection.ready && !selection.id;
+  const waitingForSlug = Boolean(routeValue && !legacyId && !selected && siteLoading);
+  const lookupError = !legacyId && !selected && !siteLoading ? siteError : null;
+  const missing = selection.ready && (!routeValue || (!selected && !legacyId && !siteLoading && !siteError));
   return (
     <>
       <SiteHeader />
@@ -498,12 +512,20 @@ export default function ProjectPage() {
         <T>
           {data ? (
             <Project project={data} key={data._id || selection.id} />
+          ) : waitingForSlug || lookupError ? (
+            <div className="wrap project-state-wrap">
+              <ContentState heading="h1" state={lookupError ? "error" : "loading"}
+                title={lookupError ? "Project details are temporarily unavailable" : "Loading project…"}
+                description={lookupError ? "Please try again in a moment." : "Project details will be ready in a moment."}
+                onAction={lookupError ? refreshSite : undefined} busy={!lookupError} />
+              <p><RouteLink href="/#sec-projects" style={{ color: "#1673ff" }}><T>Back to projects</T></RouteLink></p>
+            </div>
           ) : missing || error ? (
             <div className="wrap project-state-wrap">
-              <ContentState heading="h1" state={missing || error?.status === 404 ? "empty" : "error"}
-                title={missing || error?.status === 404 ? "Project not found" : "Project details are temporarily unavailable"}
-                description={missing || error?.status === 404 ? "Explore our other projects to see what we've been building." : "Please try again in a moment."}
-                onAction={!missing && error?.status !== 404 ? refresh : undefined} />
+              <ContentState heading="h1" state={waitingForSlug || loading ? "loading" : missing || error?.status === 404 ? "empty" : "error"}
+                title={waitingForSlug || loading ? "Loading project…" : missing || error?.status === 404 ? "Project not found" : "Project details are temporarily unavailable"}
+                description={waitingForSlug || loading ? "Project details will be ready in a moment." : missing || error?.status === 404 ? "Explore our other projects to see what we've been building." : "Please try again in a moment."}
+                onAction={lookupError ? refreshSite : !missing && error?.status !== 404 ? refresh : undefined} busy={waitingForSlug || loading} />
               <p>
                 <RouteLink
                   href="/#sec-projects"

@@ -9,6 +9,7 @@ import BlogImage from "../../components/BlogImage.jsx";
 import { projectCategories, projectImages } from "../../lib/project.js";
 import ContentState, { ProjectSkeletons } from "../../components/ContentState.jsx";
 import localBlogPosts from "../../../content/blogs/posts.json";
+import { contentPath, contentSlug } from "../../lib/content-slugs.js";
 export const categoryOrder = projectCategories;
 export function categoryKey(category = "") {
   const value = String(category || "").trim().toLowerCase().replace(/\s+/g, " ");
@@ -84,7 +85,7 @@ export function HomeClients({ children }) {
     </div>
   );
 }
-function ProjectCard({ project }) {
+function ProjectCard({ project, projects }) {
   const [slide, setSlide] = useState(0),
     [hover, setHover] = useState(false),
     [broken, setBroken] = useState([]);
@@ -100,7 +101,7 @@ function ProjectCard({ project }) {
   }, [hover, images.length]);
   return (
     <AppLink
-      to={`/projects/${encodeURIComponent(project._id)}`}
+      to={contentPath("project", project, projects)}
       className="project-card"
       aria-label={`View ${project.title || "project"} project`}
       onMouseEnter={() => setHover(true)}
@@ -198,7 +199,7 @@ function HomeCaseStudies() {
             onAction={() => refresh()} />
         ) : featured.length ? (
           <div className="projects-grid cases-grid">
-            {featured.map((project) => <ProjectCard key={project._id} project={project} />)}
+            {featured.map((project) => <ProjectCard key={project._id} project={project} projects={projects} />)}
           </div>
         ) : (
           <ContentState compact state="empty" title="Project details are being prepared"
@@ -267,7 +268,7 @@ export function HomeProjects() {
               filtered
                 .slice(0, count)
                 .map((project) => (
-                  <ProjectCard key={project._id} project={project} />
+                  <ProjectCard key={project._id} project={project} projects={projects} />
                 ))
             ) : loading && !projects.length ? <ProjectSkeletons /> : (
               <ContentState className="empty-projects"
@@ -302,15 +303,40 @@ export function HomeInsights() {
     ...post,
     image: post.coverImage,
     desc: post.excerpt,
-    articleUrl: `/blog/${encodeURIComponent(post.slug || post._id)}`,
+    articleUrl: contentPath("blog", post, site.blogs),
   }));
   const blogFallback = fallback.length ? fallback : localBlogPosts.map((post) => ({
     ...post,
     image: post.coverImage,
     desc: post.excerpt,
-    articleUrl: `/blog/${encodeURIComponent(post.slug)}`,
+    articleUrl: contentPath("blog", post, localBlogPosts),
   }));
-  const cards = (rows.length ? rows : blogFallback).map(row => ({ ...row, articleUrl: appPath(row.articleUrl || "") }));
+  const cards = (rows.length ? rows : blogFallback).map(row => {
+    const href = appPath(row.articleUrl || "");
+    let sameSitePath = href;
+    try {
+      const parsed = new URL(href, window.location.origin);
+      if (parsed.origin === window.location.origin) sameSitePath = parsed.pathname + parsed.search;
+    } catch {}
+    const reference = sameSitePath.match(/^\/blog\/([^/?#]+)/)?.[1];
+    let decodedReference = reference || "";
+    try { decodedReference = decodeURIComponent(decodedReference); } catch {}
+    const knownPost = site.blogs.find((post) =>
+      String(post._id || "") === String(row._id || "") ||
+      post.slug === row.slug ||
+      post.title === row.title ||
+      post.slug === decodedReference ||
+      String(post._id || "") === decodedReference ||
+      contentSlug(post, site.blogs, "blog") === decodedReference
+    );
+    const internalBlog = sameSitePath.startsWith("/blog/");
+    const articleUrl = knownPost
+      ? contentPath("blog", knownPost, site.blogs)
+      : internalBlog && /^(?:\d+|[a-f\d]{24})$/i.test(decodedReference)
+        ? contentPath("blog", row, blogFallback)
+        : href || contentPath("blog", row, blogFallback);
+    return { ...row, articleUrl };
+  });
   return (
     <div className="ins-grid" id="main-insights-grid">
       {cards.length ? (

@@ -45,7 +45,7 @@ For another hosted API, set `BACKEND_ORIGIN` for the local proxy and `VITE_API_B
 - `/who-we-are`, `/careers`, `/leadership`, `/news`, `/opensource` and the five case studies.
 - `/contact` - controlled contact form, attachments, consent, success/reset, team and office details.
 - `/blog` and `/blog?slug=article-slug` - blog directory and markdown articles.
-- `/projects/project-id` - project details, gallery, video and responsive live preview.
+- `/projects/project-name` - readable project URLs, gallery, video and responsive live preview.
 - `/admin` and `/admin/projects`, `/admin/blogs`, `/admin/profile`, etc. - authenticated admin sections.
 
 Old `.html` URLs are handled by React redirects for existing bookmarks. Older duplicate home/contact/admin copies redirect to the corresponding current React view.

@@ -14,6 +14,7 @@ import { uploadMedia } from "./api.js";
 import UploadField from "./UploadField.jsx";
 import ApprovalDetails from "./ApprovalDetails.jsx";
 import BlogImage from "../../components/BlogImage.jsx";
+import { contentPath } from "../../lib/content-slugs.js";
 export function useAction() {
   const [busy, setBusy] = useState(false),
     [error, setError] = useState("");
@@ -480,7 +481,7 @@ export function ResourceList({ type, embedded = false }) {
               </p>
               {type === "projects" && (
                 <div className="row">
-                  <Link to={`/projects/${row._id}`} className="btn secondary">
+                  <Link to={contentPath("project", row, rows)} className="btn secondary">
                     View project page
                   </Link>
                   {row.videoUrl && <span className="pill on">Video added</span>}
@@ -488,7 +489,7 @@ export function ResourceList({ type, embedded = false }) {
               )}
               {type === "blogs" && (
                 <Link
-                  to={`/blog?slug=${encodeURIComponent(row.slug || row._id)}`}
+                  to={contentPath("blog", row, rows)}
                   className="btn secondary"
                 >
                   View blog
