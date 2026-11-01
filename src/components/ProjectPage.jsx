@@ -496,6 +496,9 @@ export default function ProjectPage() {
         </div>
       </header>
       <main id="app">
+        {data && (loading || error) && <div className="wrap remote-refresh-note"><ContentState compact state={error ? "error" : "loading"}
+          title={error ? "Showing saved project details" : "Updating project details…"} description="You can keep exploring while we check for the latest updates."
+          onAction={refresh} busy={loading} /></div>}
         <T>
           {data ? (
             <Project project={data} key={data._id || selection.id} />

@@ -24,8 +24,15 @@ export function safeUrl(
   }
 }
 export async function getJson(endpoint, signal) {
+  const controller = new AbortController();
+  let timedOut = false;
+  const abort = () => controller.abort();
+  if (signal?.aborted) controller.abort();
+  else signal?.addEventListener("abort", abort, { once: true });
+  const timeout = setTimeout(() => { timedOut = true; controller.abort(); }, 30000);
+  try {
   const response = await fetch(`${apiBase()}${endpoint}`, {
-    signal,
+    signal: controller.signal,
     cache: "no-store",
   });
   if (!response.ok) {
@@ -37,5 +44,12 @@ export async function getJson(endpoint, signal) {
     error.status = response.status;
     throw error;
   }
-  return response.json();
+  return await response.json();
+  } catch (error) {
+    if (timedOut) throw new Error("Content is taking longer than expected. Please try again.");
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+    signal?.removeEventListener("abort", abort);
+  }
 }

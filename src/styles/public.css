@@ -1,4 +1,12 @@
 /* Shared React controls, independent of the original per-page stylesheets. */
+.route-loading { box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 28px; min-height: 100svh; padding: 32px 20px; background: #f5f8fd; color: #13233f; font: 14px/1.6 Inter, Arial, sans-serif; }
+.route-loading .loading-brand { color: #13233f; font: 800 25px/1.4 Inter, Arial, sans-serif; text-decoration: none; }
+.route-loading .loading-brand span { color: #1673ff; }
+.route-loading > .content-state { box-sizing: border-box; width: 100%; max-width: 520px; }
+/* The recovery screen also works if a route failed before assigning a body page. */
+body:not([data-page]) .route-loading .content-state { display: flex; flex-direction: column; align-items: center; gap: 20px; padding: 40px 24px; border: 1px solid #dfe8f4; border-radius: 20px; background: #fff; text-align: center; }
+body:not([data-page]) .route-loading .content-state-action { min-height: 44px; padding: 11px 22px; border: 0; border-radius: 100px; background: #1673ff; color: #fff; font: 700 14px Inter, Arial, sans-serif; }
+.remote-refresh-note { padding-top: 96px; margin-bottom: -48px; }
 body[data-page] { --site-header-height: 68px; }
 body[data-page] :is(section[id], main[id], footer[id]) { scroll-margin-top: calc(var(--site-header-height) + 24px); }
 body[data-page] :is(button, a, input, textarea):focus-visible { outline: 3px solid #68a8ff; outline-offset: 4px; }

@@ -260,10 +260,14 @@ export default function BlogPage() {
                       </p>
                     </div>
                   </div>
+                  {!!posts.length && (loading || error) && <ContentState compact state={error ? "error" : "loading"}
+                    title={error ? "Showing saved articles" : "Updating articles…"}
+                    description="You can keep reading while we check for the latest updates."
+                    onAction={refresh} busy={loading} />}
                   <T>
-                    {loading ? (
+                    {!posts.length && loading ? (
                       <ContentState state="loading" title="Loading articles…" description="Our latest ideas will be ready in a moment." />
-                    ) : error ? (
+                    ) : !posts.length && error ? (
                       <ContentState state="error" title="Articles are temporarily unavailable" description="Please try again in a moment." onAction={refresh} />
                     ) : posts.length ? (
                       <div className="blog-grid">

@@ -1,8 +1,8 @@
 import { useLayoutEffect, useState } from "react";
-import styles from "../data/route-styles.json";
-import { assetUrl } from "../lib/paths.js";
+import { loadPageStyles, pageStylesReady } from "../lib/pageStyles.js";
 export default function usePageStyles(slug) {
-  const [loaded, setLoaded] = useState(null);
+  const [state, setState] = useState({ slug: null, ready: false, error: null });
+  const [revision, setRevision] = useState(0);
   useLayoutEffect(() => {
     let active = true;
     const previousClass = document.body.className;
@@ -12,29 +12,18 @@ export default function usePageStyles(slug) {
         ? "service-page"
         : "";
     document.body.dataset.page = slug;
-    const links = (styles[slug] || styles["who-we-are"]).map((href) => {
-      const link = document.createElement("link");
-      link.rel = "stylesheet";
-      link.href = assetUrl(href.replace(/^\//, ""));
-      link.dataset.reactPageStyle = slug;
-      return link;
-    });
-    const loads = links.map(
-      (link) =>
-        new Promise((resolve) => {
-          link.onload = resolve;
-          link.onerror = resolve;
-          document.head.appendChild(link);
-        }),
-    );
-    Promise.all(loads).then(() => {
-      if (active) setLoaded(slug);
+    const promise = loadPageStyles(slug);
+    setState({ slug, ready: pageStylesReady(slug), error: null });
+    promise.then(() => {
+      if (active) setState({ slug, ready: true, error: null });
+    }, error => {
+      if (active) setState({ slug, ready: false, error });
     });
     return () => {
       active = false;
-      links.forEach((link) => link.remove());
       document.body.className = previousClass;
     };
-  }, [slug]);
-  return loaded === slug;
+  }, [slug, revision]);
+  return { ready: state.slug === slug && state.ready, error: state.slug === slug ? state.error : null,
+    retry: () => setRevision(value => value + 1) };
 }

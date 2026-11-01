@@ -2,8 +2,10 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import App from "./App.jsx";
-import "./styles/react.css";
-import "./styles/public.css";
+import baseStyles from "./styles/react.css?inline";
+import publicStyles from "./styles/public.css?inline";
+import fontStyles from "./styles/fonts.css?inline";
+import PageLoading from "./components/PageLoading.jsx";
 class ErrorBoundary extends React.Component {
   state = { error: null };
   static getDerivedStateFromError(error) {
@@ -11,11 +13,7 @@ class ErrorBoundary extends React.Component {
   }
   render() {
     return this.state.error ? (
-      <main role="alert">
-        <h1>Unable to open this page</h1>
-        <p>Please reload and try again.</p>
-        <a href={import.meta.env.BASE_URL}>Return to home</a>
-      </main>
+      <PageLoading error onRetry={() => window.location.reload()} />
     ) : (
       this.props.children
     );
@@ -23,6 +21,7 @@ class ErrorBoundary extends React.Component {
 }
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
+    <style data-react-core-styles="">{fontStyles + baseStyles + publicStyles}</style>
     <BrowserRouter
       basename={import.meta.env.BASE_URL.replace(/\/$/, "") || "/"}
       future={{ v7_startTransition: true, v7_relativeSplatPath: true }}

@@ -125,6 +125,7 @@ async function setup() {
         ".svg": "image/svg+xml",
         ".mp4": "video/mp4",
         ".webmanifest": "application/manifest+json",
+        ".woff2": "font/woff2",
       }[path.extname(file)] || "application/octet-stream";
     response.writeHead(200, { "Content-Type": type });
     fs.createReadStream(file).pipe(response);
@@ -919,6 +920,118 @@ await test("failed and slow public data has styled recovery controls and preserv
     await open("/projects/unavailable");
     await page.getByRole("heading", { name: "Project details are temporarily unavailable" }).waitFor();
     assert.equal(await page.locator(".content-state-action").isVisible(), true);
+    assert.deepEqual(errors, []);
+  } finally { release(); await close(); }
+});
+
+await test("page JavaScript loads alongside CSS and failed styling recovers without showing a broken layout", async () => {
+  const { page, errors, close } = await session();
+  let release;
+  const gate = new Promise(resolve => { release = resolve; });
+  let fail = true, stylesheetRequests = 0;
+  await page.route("**/assets/page-index-*.css", async route => {
+    stylesheetRequests++;
+    if (fail) { await gate; await route.abort().catch(() => {}); }
+    else await route.continue();
+  });
+  try {
+    const pageChunk = page.waitForRequest(request => /\/assets\/SiteHeader-[^/]+\.js$/.test(request.url()));
+    await page.goto(origin, { waitUntil: "domcontentloaded" });
+    await page.locator(".route-loading").waitFor();
+    await pageChunk;
+    assert.equal(await page.locator(".home-hero-photo").count(), 0);
+    assert.equal(stylesheetRequests, 1);
+    release();
+    await page.getByRole("heading", { name: "This page couldn't finish loading" }).waitFor();
+    for (const width of [1440, 390]) {
+      await page.setViewportSize({ width, height: 900 });
+      const retry = page.getByRole("button", { name: "Try again", exact: true });
+      const appearance = await retry.evaluate(element => ({ height: element.getBoundingClientRect().height,
+        background: getComputedStyle(element).backgroundColor }));
+      assert.ok(appearance.height >= 44);
+      assert.equal(appearance.background, "rgb(22, 115, 255)");
+      assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+      await page.screenshot({ path: path.join(root, `test-results/stylesheet-recovery-${width}.png`) });
+    }
+    fail = false;
+    await page.getByRole("button", { name: "Try again", exact: true }).click();
+    await page.locator(".home-hero-photo").waitFor();
+    assert.equal(stylesheetRequests, 2);
+    assert.equal(await page.locator('link[data-react-page-style][media="all"]').count(), 1);
+    assert.equal(await page.locator('link[href*="leaflet"]').count(), 0);
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await page.locator("header .nbtn").filter({ hasText: /^Insights$/ }).click();
+    await page.locator('header .drop a[href="/blog"]').click();
+    await page.locator(".post-card").first().waitFor();
+    await page.goBack();
+    await page.locator(".home-hero-photo").waitFor();
+    assert.equal(stylesheetRequests, 2, "Returning to a page should reuse its loaded CSS");
+    assert.deepEqual(errors, []);
+  } finally { release(); await close(); }
+});
+
+await test("saved public articles and project details remain usable through slow reloads and outages", async () => {
+  const { page, open, errors, close } = await session();
+  let mode = "success", release;
+  let gate;
+  const hold = () => { mode = "hold"; gate = new Promise(resolve => { release = resolve; }); };
+  const respond = async route => {
+    if (mode === "hold") await gate;
+    const blog = new URL(route.request().url()).pathname.endsWith("/blogs");
+    await route.fulfill(mode === "success" ? { json: blog ? [article] : project }
+      : { status: mode === "missing" ? 404 : 503, json: {} }).catch(() => {});
+  };
+  await page.route("**/api/blogs", respond);
+  await page.route("**/api/projects/project-fixture", respond);
+  try {
+    await open("/blog");
+    await page.locator(".post-card").first().waitFor();
+    hold();
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.getByRole("heading", { name: "Updating articles…", exact: true }).waitFor();
+    assert.equal(await page.locator(".post-card").count(), 1);
+    mode = "error"; release();
+    await page.getByRole("heading", { name: "Showing saved articles" }).waitFor();
+    assert.equal(await page.locator(".post-card").count(), 1);
+    mode = "success";
+    await page.getByRole("button", { name: "Try again", exact: true }).click();
+    await page.locator(".content-state--compact").waitFor({ state: "hidden" });
+    await open("/projects/project-fixture");
+    await page.getByRole("heading", { name: project.title, exact: true }).waitFor();
+    hold();
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.getByRole("heading", { name: "Updating project details…", exact: true }).waitFor();
+    assert.equal(await page.getByRole("heading", { name: project.title, exact: true }).count(), 1);
+    mode = "error"; release();
+    await page.getByRole("heading", { name: "Showing saved project details" }).waitFor();
+    for (const width of [1440, 390]) {
+      await page.setViewportSize({ width, height: 900 });
+      assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+    }
+    mode = "missing";
+    await page.getByRole("button", { name: "Try again", exact: true }).click();
+    await page.getByRole("heading", { name: "Project not found", exact: true }).waitFor();
+    assert.equal(await page.getByRole("heading", { name: project.title, exact: true }).count(), 0);
+    assert.equal(await page.evaluate(() => Object.keys(localStorage).some(key => key.startsWith("sakinzo-public-v1:") && key.endsWith(":/projects/project-fixture"))), false);
+    assert.deepEqual(errors, []);
+  } finally { release?.(); await close(); }
+});
+
+await test("incomplete saved site data does not break the homepage and stalled requests expose a styled retry", async () => {
+  const { page, open, errors, close } = await session();
+  let release;
+  const gate = new Promise(resolve => { release = resolve; });
+  await page.addInitScript(cached => {
+    localStorage.setItem("sakinzo-site-data-v6", JSON.stringify({ data: cached }));
+    const original = window.setTimeout;
+    window.setTimeout = (handler, delay, ...args) => original(handler, delay === 30000 ? 500 : delay, ...args);
+  }, { ...siteData, projects: [null, project], clients: [null], mapLocations: [null], sections: null, contactPage: null });
+  await page.route("**/api/public/site-data", async route => { await gate; await route.fulfill({ json: siteData }).catch(() => {}); });
+  try {
+    await open("/");
+    await page.getByRole("heading", { name: "Showing saved projects" }).waitFor();
+    assert.equal(await page.locator("#main-projects-grid .project-card").count(), 1);
+    assert.ok(await page.locator("#sec-projects .content-state-action").isEnabled());
     assert.deepEqual(errors, []);
   } finally { release(); await close(); }
 });

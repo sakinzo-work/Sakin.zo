@@ -5,22 +5,30 @@ import { LanguageProvider } from "./context/LanguageContext.jsx";
 import { MetadataProvider } from "./context/MetadataContext.jsx";
 import { PageContext } from "./lib/PageContext.js";
 import usePageStyles from "./hooks/usePageStyles.js";
+import PageLoading from "./components/PageLoading.jsx";
 import { appPath } from "./lib/paths.js";
 import routes from "./data/routes.json";
+import { preload } from "react-dom";
+import { assetUrl } from "./lib/paths.js";
 const modules = import.meta.glob("./pages/*.jsx");
+const requests = new Map();
+function loadPage(slug) {
+  if (!requests.has(slug)) {
+    const request = (slug === "admin" ? import("./features/admin/AdminPage.jsx") : modules[`./pages/${slug}.jsx`]());
+    requests.set(slug, request);
+    request.catch(() => { if (requests.get(slug) === request) requests.delete(slug); });
+  }
+  return requests.get(slug);
+}
 const pages = Object.fromEntries(
   Object.keys(modules).map((file) => [
     file.split("/").pop().slice(0, -4),
-    lazy(modules[file]),
+    lazy(() => loadPage(file.split("/").pop().slice(0, -4))),
   ]),
 );
-const Admin = lazy(() => import("./features/admin/AdminPage.jsx"));
+const Admin = lazy(() => loadPage("admin"));
 function Loading() {
-  return (
-    <div className="react-loading" role="status">
-      Loading…
-    </div>
-  );
+  return <PageLoading />;
 }
 function Ready({ slug, children }) {
   const location = useLocation(),
@@ -45,8 +53,13 @@ function Ready({ slug, children }) {
   );
 }
 function Page({ slug, admin = false }) {
-  const ready = usePageStyles(slug),
+  const { ready, error, retry } = usePageStyles(slug),
     Component = admin ? Admin : pages[slug];
+  if (slug === "index") preload(assetUrl(matchMedia("(max-width: 600px)").matches
+    ? "assets/sakinzo-hero-mobile.webp" : "assets/sakinzo-hero-desktop-waves.webp"), { as: "image", fetchPriority: "high" });
+  // Start the page chunk alongside CSS, rather than waiting for CSS first.
+  useEffect(() => { loadPage(slug).catch(() => {}); }, [slug]);
+  if (error) return <PageLoading error onRetry={retry} />;
   if (!ready) return <Loading />;
   return (
     <PageContext.Provider value={slug}>

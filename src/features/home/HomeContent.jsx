@@ -1,6 +1,5 @@
 import { createPortal } from "react-dom";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import "leaflet/dist/leaflet.css";
 import AppLink from "../../components/AppLink.jsx";
 import { useSiteData, visibleItems } from "../../context/SiteDataContext.jsx";
 import { T } from "../../context/LanguageContext.jsx";
@@ -20,7 +19,7 @@ export const categoryOrder = [
   "Other",
 ];
 export function categoryKey(category = "") {
-  const value = category.trim().toLowerCase().replace(/\s+/g, " ");
+  const value = String(category || "").trim().toLowerCase().replace(/\s+/g, " ");
   return (
     {
       "web developement": "web development",
@@ -432,7 +431,7 @@ export function HomeMap() {
       resizeObserver;
     const load = async () => {
       try {
-        const L = await import("leaflet");
+        const [L] = await Promise.all([import("leaflet"), import("leaflet/dist/leaflet.css")]);
         if (!active) return;
         const icon = L.icon({
           iconUrl: assetUrl("vendor/leaflet/images/marker-icon.png"),

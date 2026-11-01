@@ -21,6 +21,9 @@ const empty = {
   blogs: [],
 };
 const Context = createContext({ site: empty, loading: true, error: null });
+const record = value => value && typeof value === "object" && !Array.isArray(value);
+const normalizeSite = data => Object.fromEntries(Object.entries(empty).map(([key, fallback]) =>
+  [key, Array.isArray(fallback) ? (Array.isArray(data?.[key]) ? data[key].filter(record) : []) : record(data?.[key]) ? data[key] : {}]));
 export function SiteDataProvider({ children }) {
   const [state, setState] = useState(() => {
     try {
@@ -28,7 +31,7 @@ export function SiteDataProvider({ children }) {
         localStorage.getItem("sakinzo-site-data-v6") || "null",
       );
       return {
-        site: { ...empty, ...cached?.data },
+        site: normalizeSite(cached?.data),
         loading: true,
         error: null,
       };
@@ -41,11 +44,12 @@ export function SiteDataProvider({ children }) {
     try {
       const data = await getJson("/public/site-data", signal);
       if (signal?.aborted) return;
-      setState({ site: { ...empty, ...data }, loading: false, error: null });
+      const site = normalizeSite(data);
+      setState({ site, loading: false, error: null });
       try {
         localStorage.setItem(
           "sakinzo-site-data-v6",
-          JSON.stringify({ data, savedAt: Date.now() }),
+          JSON.stringify({ data: site, savedAt: Date.now() }),
         );
       } catch {}
     } catch (error) {
@@ -67,5 +71,5 @@ export function SiteDataProvider({ children }) {
 export const useSiteData = () => useContext(Context);
 export const visibleItems = (rows) =>
   (Array.isArray(rows) ? rows : [])
-    .filter((row) => row.visible !== false)
+    .filter((row) => record(row) && row.visible !== false)
     .sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0));
