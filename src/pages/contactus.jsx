@@ -521,12 +521,12 @@ export default function Page() {
                   <T>{"Legal"}</T>
                 </h4>
                 {"\n                        "}
-                <RouteLink href={"#"}>
-                  <T>{"Privacy Policy"}</T>
+                <RouteLink href="mailto:sakinzo.work@gmail.com?subject=Privacy%20enquiry">
+                  <T>{"Privacy enquiries"}</T>
                 </RouteLink>
                 {"\n                        "}
-                <RouteLink href={"#"}>
-                  <T>{"Terms"}</T>
+                <RouteLink href="mailto:sakinzo.work@gmail.com?subject=Terms%20enquiry">
+                  <T>{"Terms enquiries"}</T>
                 </RouteLink>
                 {"\n                    "}
               </div>
@@ -607,19 +607,19 @@ export default function Page() {
           {"\n            "}
           <div className={"copy-links"}>
             {"\n                "}
-            <RouteLink href={"#"}>
-              <T>{"Privacy Policy"}</T>
+            <RouteLink href="mailto:sakinzo.work@gmail.com?subject=Privacy%20enquiry">
+              <T>{"Privacy enquiries"}</T>
             </RouteLink>
             {"\n                "}
-            <RouteLink href={"#"}>
-              <T>{"Terms and conditions"}</T>
+            <RouteLink href="mailto:sakinzo.work@gmail.com?subject=Terms%20enquiry">
+              <T>{"Terms enquiries"}</T>
             </RouteLink>
             {"\n                "}
-            <RouteLink href={"#"}>
-              <T>{"Cookie Policy"}</T>
+            <RouteLink href="mailto:sakinzo.work@gmail.com?subject=Cookie%20enquiry">
+              <T>{"Cookie enquiries"}</T>
             </RouteLink>
             {"\n                "}
-            <RouteLink href={"#"}>
+            <RouteLink href="/sitemap.xml">
               <T>{"Sitemap"}</T>
             </RouteLink>
             {"\n            "}

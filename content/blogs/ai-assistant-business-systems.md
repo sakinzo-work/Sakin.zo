@@ -80,7 +80,7 @@ Measure more than answer fluency. Review whether the assistant selected the righ
 
 Expand after the pilot shows dependable outcomes. A sensible next step might be approving a prepared ticket update, followed by another carefully bounded workflow. Each expansion needs its own permission checks and task-level evaluation.
 
-For help planning the integration, explore our [AI development services](ai-development.html) and [AI agent development services](ai-agent-development.html).
+For help planning the integration, explore our [AI development services](/ai-development) and [AI agent development services](/ai-agent-development).
 
 ## Further reading
 

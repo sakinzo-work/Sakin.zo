@@ -8,6 +8,7 @@ import { appPath, assetUrl } from "../../lib/paths.js";
 import BlogImage from "../../components/BlogImage.jsx";
 import { projectCategories, projectImages } from "../../lib/project.js";
 import ContentState, { ProjectSkeletons } from "../../components/ContentState.jsx";
+import localBlogPosts from "../../../content/blogs/posts.json";
 export const categoryOrder = projectCategories;
 export function categoryKey(category = "") {
   const value = String(category || "").trim().toLowerCase().replace(/\s+/g, " ");
@@ -31,7 +32,8 @@ export const categoryLabel = (value) =>
   value;
 export function HomeSection({ sectionKey, children }) {
   const { site } = useSiteData();
-  return site.sections?.[sectionKey] === false ? null : children;
+  if (site.sections?.[sectionKey] === false) return null;
+  return sectionKey === "cases" ? <HomeCaseStudies /> : children;
 }
 export function HomeStats({ children }) {
   const { site } = useSiteData(),
@@ -164,6 +166,48 @@ function ProjectCard({ project }) {
     </AppLink>
   );
 }
+function HomeCaseStudies() {
+  const { site, loading, error, refresh } = useSiteData();
+  const projects = visibleItems(site.projects);
+  const featured = [
+    /air.*water|aquaair/i,
+    /focus\s*lock/i,
+    /farm.?dash/i,
+  ]
+    .map((pattern) => projects.find((project) => pattern.test(project.title || "")))
+    .filter(Boolean);
+  for (const project of projects) {
+    if (featured.length >= 3) break;
+    if (!featured.some((item) => item._id === project._id)) featured.push(project);
+  }
+  return (
+    <section className="sec projects-sec cases-sec" id="sec-cases">
+      <div className="wrap">
+        <div className="sec-hd">
+          <div>
+            <h2 className="sec-title"><T>Selected Projects</T></h2>
+            <p className="sec-subtitle"><T>Real products built by Sakin.zo, with their published scope and project details.</T></p>
+          </div>
+          <AppLink className="btn-blue" href="/projects"><T>Browse all projects</T></AppLink>
+        </div>
+        {loading && !featured.length ? (
+          <ProjectSkeletons />
+        ) : error && !featured.length ? (
+          <ContentState compact state="error" title="Projects are temporarily unavailable"
+            description="Please try again to explore our published work."
+            onAction={() => refresh()} />
+        ) : featured.length ? (
+          <div className="projects-grid cases-grid">
+            {featured.map((project) => <ProjectCard key={project._id} project={project} />)}
+          </div>
+        ) : (
+          <ContentState compact state="empty" title="Project details are being prepared"
+            description="Our published work will appear here soon." />
+        )}
+      </div>
+    </section>
+  );
+}
 export function HomeProjects() {
   const { site, loading, error, refresh } = useSiteData(),
     [filter, setFilter] = useState("all"),
@@ -258,9 +302,15 @@ export function HomeInsights() {
     ...post,
     image: post.coverImage,
     desc: post.excerpt,
-    articleUrl: `/blog?slug=${encodeURIComponent(post.slug || post._id)}`,
+    articleUrl: `/blog/${encodeURIComponent(post.slug || post._id)}`,
   }));
-  const cards = (rows.length ? rows : fallback).map(row => ({ ...row, articleUrl: appPath(row.articleUrl || "") }));
+  const blogFallback = fallback.length ? fallback : localBlogPosts.map((post) => ({
+    ...post,
+    image: post.coverImage,
+    desc: post.excerpt,
+    articleUrl: `/blog/${encodeURIComponent(post.slug)}`,
+  }));
+  const cards = (rows.length ? rows : blogFallback).map(row => ({ ...row, articleUrl: appPath(row.articleUrl || "") }));
   return (
     <div className="ins-grid" id="main-insights-grid">
       {cards.length ? (

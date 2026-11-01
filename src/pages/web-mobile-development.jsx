@@ -55,13 +55,13 @@ export default function Page() {
                 </span>
                 <h1>
                   <T>
-                    {"Digital products that work wherever your customers are."}
+                    {"Websites and apps built around the way your business works."}
                   </T>
                 </h1>
                 <p className={"service-hero-copy"}>
                   <T>
                     {
-                      "Custom websites, web applications and mobile apps built around your users, workflows and business goals."
+                      "Website development, web applications and Android or iOS apps for businesses in Mumbai and Thane, shaped around your customers, workflows and goals."
                     }
                   </T>
                 </p>
@@ -131,7 +131,7 @@ export default function Page() {
               <p>
                 <T>
                   {
-                    "From a new customer portal to a mobile companion for an existing platform, we connect design, APIs, integrations and release planning so your product works as a whole."
+                    "From a new customer portal to a mobile companion for an existing platform, we connect design, APIs, integrations and release planning so your product works as a whole. We work with Mumbai and Thane teams to define the first useful release, the systems it must connect to and how it will be supported after launch."
                   }
                 </T>
               </p>
@@ -378,6 +378,10 @@ export default function Page() {
                     }
                   </T>
                 </p>
+              </details>
+              <details>
+                <summary><T>{"How do you estimate cost and delivery time?"}</T></summary>
+                <p><T>{"We first agree the users, platforms, integrations and must-have features. The estimate then reflects design, development, testing and launch work, with the first useful release clearly scoped."}</T></p>
               </details>
             </div>
           </div>

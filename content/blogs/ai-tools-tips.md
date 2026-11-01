@@ -85,7 +85,7 @@ For a team trial, choose a few representative tasks and define quality before co
 - **Test:** validate the result in its real context.
 - **Finish:** edit, approve and hand over the final output.
 
-Start with one recurring task this week and improve the routine through actual use. If a workflow needs deeper access to business systems, our [AI assistant development team](ai-agent-development.html) can help define the integration and its review points.
+Start with one recurring task this week and improve the routine through actual use. If a workflow needs deeper access to business systems, our [AI assistant development team](/ai-agent-development) can help define the integration and its review points.
 
 ## Further reading
 

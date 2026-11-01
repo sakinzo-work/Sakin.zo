@@ -54,12 +54,12 @@ export default function Page() {
                   <T>{"AI Agent Development"}</T>
                 </span>
                 <h1>
-                  <T>{"AI agents built around real work and clear control."}</T>
+                  <T>{"AI chatbots and agents designed for real business work."}</T>
                 </h1>
                 <p className={"service-hero-copy"}>
                   <T>
                     {
-                      "Assistants and multi-step workflows that connect business knowledge, approved tools and human oversight."
+                      "AI chatbots and agents that connect trusted business knowledge with approved tools, clear permissions and human review. Sakin.zo works with teams in Mumbai and Thane."
                     }
                   </T>
                 </p>
@@ -129,7 +129,7 @@ export default function Page() {
               <p>
                 <T>
                   {
-                    "We map the workflow, build integrations and evaluate behavior across realistic scenarios so your team can understand what the system can do and how it should be operated."
+                    "We map the workflow, build integrations and evaluate behavior across realistic scenarios so your team can understand what the system can do and how it should be operated. For Mumbai and Thane businesses, we can start with one support, research or operations task and agree the data, access and review requirements before development."
                   }
                 </T>
               </p>
@@ -364,6 +364,10 @@ export default function Page() {
                     }
                   </T>
                 </p>
+              </details>
+              <details>
+                <summary><T>{"What affects an AI assistant's cost and timeline?"}</T></summary>
+                <p><T>{"The workflow, source data, system integrations, permission model and evaluation needs shape the scope. We define a bounded pilot and review points before estimating implementation."}</T></p>
               </details>
             </div>
           </div>

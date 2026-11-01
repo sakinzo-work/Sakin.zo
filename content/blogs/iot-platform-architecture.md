@@ -83,7 +83,7 @@ Use the estimate to test queue capacity, storage growth and alert processing. Re
 
 Use the results to adjust the design before adding more devices. A dependable IoT platform is one whose failure behavior is understood as clearly as its normal data flow.
 
-Explore our [IoT development services](iot-development.html) and [architecture design services](architecture-design.html) to plan a connected product around these responsibilities.
+Explore our [IoT development services](/iot-development) and [architecture design services](/architecture-design) to plan a connected product around these responsibilities.
 
 ## Further reading
 

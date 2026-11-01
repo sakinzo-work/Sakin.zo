@@ -55,13 +55,13 @@ export default function Page() {
                 </span>
                 <h1>
                   <T>
-                    {"Commerce experiences built for customers and operations."}
+                    {"eCommerce websites built around the way your business sells."}
                   </T>
                 </h1>
                 <p className={"service-hero-copy"}>
                   <T>
                     {
-                      "Storefronts, shopping applications and commerce integrations that connect the customer journey to your business."
+                      "eCommerce website development for product discovery, checkout and order workflows. Sakin.zo works with businesses in Mumbai and Thane."
                     }
                   </T>
                 </p>
@@ -135,7 +135,7 @@ export default function Page() {
               <p>
                 <T>
                   {
-                    "We help you define the right platform approach, design the important journeys and build an experience that can be maintained and improved as the business changes."
+                    "We help you define the right platform approach, design the important journeys and build an experience that can be maintained and improved as the business changes. For Mumbai and Thane businesses, we map the storefront to the existing inventory, payment, shipping and customer-support processes before agreeing the build scope."
                   }
                 </T>
               </p>
@@ -372,6 +372,10 @@ export default function Page() {
                     }
                   </T>
                 </p>
+              </details>
+              <details>
+                <summary><T>{"What affects an online store's cost and timeline?"}</T></summary>
+                <p><T>{"The platform, product catalogue, payment and shipping integrations, migration needs and checkout requirements determine the scope. We map these with your team before preparing an estimate."}</T></p>
               </details>
             </div>
           </div>

@@ -6,7 +6,7 @@ const path = require('node:path');
 const Blog = require('../backend/src/models/Blog');
 const Insight = require('../backend/src/models/Insight');
 const contentRoot = path.resolve(__dirname, '../content/blogs');
-const site = 'https://sakinzo-work.github.io/sakinzo/frontend/';
+const site = 'https://sakinzo.vercel.app/';
 
 async function loadPosts(publishedAt = new Date().toISOString()) {
   const metadata = JSON.parse(fs.readFileSync(path.join(contentRoot, 'posts.json'), 'utf8'));
@@ -30,7 +30,7 @@ async function loadPosts(publishedAt = new Date().toISOString()) {
 
 function insightFor(post) {
   return { title: post.title, desc: post.excerpt, category: post.category, author: post.author, image: post.coverImage,
-    articleUrl: new URL(`blog.html?slug=${encodeURIComponent(post.slug)}`, site).href,
+    articleUrl: new URL(`blog/${encodeURIComponent(post.slug)}`, site).href,
     readTime: post.readTime, publishedAt: post.publishedAt, order: post.order, rating: 0, visible: true };
 }
 

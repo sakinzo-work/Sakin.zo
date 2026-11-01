@@ -9,6 +9,7 @@ import SiteHeader from "../components/SiteHeader.jsx";
 import FooterColumn from "../components/FooterColumn.jsx";
 import { useSiteData } from "../context/SiteDataContext.jsx";
 import { FooterContactForm } from "../features/contact/ContactForms.jsx";
+import localBlogPosts from "../../content/blogs/posts.json";
 import {
   HomeSection,
   HomeStats,
@@ -1861,515 +1862,7 @@ export default function Page() {
       <HomeServices />
       {"\n\n    "}
       {"\n    "}
-      <HomeSection sectionKey="cases">
-        <section id={"sec-cases"}>
-          {"\n        "}
-          <Reveal>
-            <div className={"wrap sec reveal"}>
-              {"\n            "}
-              <div className={"sec-hd"}>
-                {"\n                "}
-                <h2 className={"sec-title"}>
-                  <T>{"Case studies"}</T>
-                </h2>
-                <RouteLink href={"#"} className={"btn-blue"}>
-                  <T>{"Browse More"}</T>
-                </RouteLink>
-                {"\n            "}
-              </div>
-              {"\n            "}
-              <div className={"cases-grid"}>
-                {"\n                "}
-                <RouteLink href={"#"} className={"case-card"}>
-                  {"\n                    "}
-                  <div className={"case-img"}>
-                    {"\n                        "}
-                    <svg
-                      width={"100%"}
-                      height={"300"}
-                      viewBox={"0 0 600 300"}
-                      xmlns={"http://www.w3.org/2000/svg"}
-                      preserveAspectRatio={"xMidYMid slice"}
-                    >
-                      {"\n                            "}
-                      <defs>
-                        {"\n                                "}
-                        <linearGradient
-                          id={"csg1"}
-                          x1={"0"}
-                          y1={"0"}
-                          x2={"1"}
-                          y2={"1"}
-                        >
-                          {"\n                                    "}
-                          <stop offset={"0%"} stopColor={"#1c2952"}></stop>
-                          {"\n                                    "}
-                          <stop offset={"100%"} stopColor={"#2d4080"}></stop>
-                          {"\n                                "}
-                        </linearGradient>
-                        {"\n                            "}
-                      </defs>
-                      {"\n                            "}
-                      <rect
-                        width={"600"}
-                        height={"300"}
-                        fill={"url(#csg1)"}
-                      ></rect>
-                      {"\n                            "}
-                      <rect
-                        x={"60"}
-                        y={"40"}
-                        width={"100"}
-                        height={"210"}
-                        rx={"14"}
-                        fill={"#233060"}
-                        stroke={"#3a5090"}
-                        strokeWidth={"1.2"}
-                      ></rect>
-                      {"\n                            "}
-                      <rect
-                        x={"70"}
-                        y={"58"}
-                        width={"80"}
-                        height={"155"}
-                        rx={"5"}
-                        fill={"#1a2550"}
-                      ></rect>
-                      {"\n                            "}
-                      <rect
-                        x={"200"}
-                        y={"20"}
-                        width={"110"}
-                        height={"235"}
-                        rx={"15"}
-                        fill={"#283468"}
-                        stroke={"#4060a0"}
-                        strokeWidth={"1.2"}
-                      ></rect>
-                      {"\n                            "}
-                      <rect
-                        x={"212"}
-                        y={"38"}
-                        width={"86"}
-                        height={"178"}
-                        rx={"5"}
-                        fill={"#1e2d5a"}
-                      ></rect>
-                      {"\n                            "}
-                      <rect
-                        x={"358"}
-                        y={"45"}
-                        width={"100"}
-                        height={"210"}
-                        rx={"14"}
-                        fill={"#233060"}
-                        stroke={"#3a5090"}
-                        strokeWidth={"1.2"}
-                      ></rect>
-                      {"\n                            "}
-                      <rect
-                        x={"368"}
-                        y={"63"}
-                        width={"80"}
-                        height={"155"}
-                        rx={"5"}
-                        fill={"#1a2550"}
-                      ></rect>
-                      {"\n                            "}
-                      <rect
-                        x={"76"}
-                        y={"66"}
-                        width={"68"}
-                        height={"8"}
-                        rx={"3"}
-                        fill={"#3a5090"}
-                        opacity={".7"}
-                      ></rect>
-                      {"\n                            "}
-                      <rect
-                        x={"76"}
-                        y={"80"}
-                        width={"48"}
-                        height={"40"}
-                        rx={"4"}
-                        fill={"#2e4070"}
-                        opacity={".6"}
-                      ></rect>
-                      {"\n                            "}
-                      <rect
-                        x={"130"}
-                        y={"80"}
-                        width={"20"}
-                        height={"40"}
-                        rx={"4"}
-                        fill={"#2e4070"}
-                        opacity={".5"}
-                      ></rect>
-                      {"\n                            "}
-                      <rect
-                        x={"218"}
-                        y={"50"}
-                        width={"74"}
-                        height={"8"}
-                        rx={"3"}
-                        fill={"#4060a8"}
-                        opacity={".8"}
-                      ></rect>
-                      {"\n                            "}
-                      <rect
-                        x={"218"}
-                        y={"64"}
-                        width={"50"}
-                        height={"8"}
-                        rx={"3"}
-                        fill={"#3550a0"}
-                        opacity={".5"}
-                      ></rect>
-                      {"\n                            "}
-                      <path
-                        d={
-                          "M228 130 L268 125 L275 135 L270 148 L228 148 L222 138 Z"
-                        }
-                        fill={"#4a70c0"}
-                        opacity={".6"}
-                      ></path>
-                      {"\n                            "}
-                      <circle
-                        cx={"232"}
-                        cy={"150"}
-                        r={"6"}
-                        fill={"#5080d0"}
-                        opacity={".7"}
-                      ></circle>
-                      {"\n                            "}
-                      <circle
-                        cx={"262"}
-                        cy={"150"}
-                        r={"6"}
-                        fill={"#5080d0"}
-                        opacity={".7"}
-                      ></circle>
-                      {"\n                        "}
-                    </svg>
-                    {"\n                    "}
-                  </div>
-                  {"\n                    "}
-                  <div className={"case-body"}>
-                    {"\n                        "}
-                    <div className={"case-ttl"}>
-                      <T>{"Marketplace for AMG races"}</T>
-                    </div>
-                    {"\n                        "}
-                    <div className={"case-desc"}>
-                      <T>
-                        {
-                          "Race Scout case study - Online race car rental platform for Team\n                            Managers, Drivers and Petrolheads"
-                        }
-                      </T>
-                    </div>
-                    {"\n                        "}
-                    <span className={"case-link"}>
-                      <T>{"Learn more... "}</T>
-                      <span className={"arr-sm"}></span>
-                    </span>
-                    {"\n                    "}
-                  </div>
-                  {"\n                "}
-                </RouteLink>
-                {"\n                "}
-                <RouteLink href={"#"} className={"case-card"}>
-                  {"\n                    "}
-                  <div className={"case-img"}>
-                    {"\n                        "}
-                    <svg
-                      width={"100%"}
-                      height={"300"}
-                      viewBox={"0 0 600 300"}
-                      xmlns={"http://www.w3.org/2000/svg"}
-                      preserveAspectRatio={"xMidYMid slice"}
-                    >
-                      {"\n                            "}
-                      <defs>
-                        {"\n                                "}
-                        <linearGradient
-                          id={"csg2"}
-                          x1={"0"}
-                          y1={"0"}
-                          x2={"1"}
-                          y2={"1"}
-                        >
-                          {"\n                                    "}
-                          <stop offset={"0%"} stopColor={"#0c1d34"}></stop>
-                          {"\n                                    "}
-                          <stop offset={"100%"} stopColor={"#143a5c"}></stop>
-                          {"\n                                "}
-                        </linearGradient>
-                        {"\n                            "}
-                      </defs>
-                      {"\n                            "}
-                      <rect
-                        width={"600"}
-                        height={"300"}
-                        fill={"url(#csg2)"}
-                      ></rect>
-                      {"\n                            "}
-                      <rect
-                        x={"30"}
-                        y={"25"}
-                        width={"540"}
-                        height={"250"}
-                        rx={"12"}
-                        fill={"#0d2338"}
-                        stroke={"#1a4060"}
-                        strokeWidth={"1"}
-                      ></rect>
-                      {"\n                            "}
-                      <rect
-                        x={"30"}
-                        y={"25"}
-                        width={"540"}
-                        height={"36"}
-                        rx={"12"}
-                        fill={"#0a1c2e"}
-                      ></rect>
-                      {"\n                            "}
-                      <rect
-                        x={"40"}
-                        y={"35"}
-                        width={"60"}
-                        height={"14"}
-                        rx={"3"}
-                        fill={"#1a5080"}
-                        opacity={".8"}
-                      ></rect>
-                      {"\n                            "}
-                      <text
-                        x={"42"}
-                        y={"46"}
-                        fontSize={"8"}
-                        fontWeight={"700"}
-                        fill={"#5ab0e0"}
-                        fontFamily={"Inter,sans-serif"}
-                      >
-                        <T>{"2SMART"}</T>
-                      </text>
-                      {"\n                            "}
-                      <rect
-                        x={"36"}
-                        y={"68"}
-                        width={"90"}
-                        height={"10"}
-                        rx={"3"}
-                        fill={"#1a3a5a"}
-                        opacity={".8"}
-                      ></rect>
-                      {"\n                            "}
-                      <rect
-                        x={"36"}
-                        y={"84"}
-                        width={"70"}
-                        height={"8"}
-                        rx={"3"}
-                        fill={"#1a3a5a"}
-                        opacity={".55"}
-                      ></rect>
-                      {"\n                            "}
-                      <rect
-                        x={"36"}
-                        y={"98"}
-                        width={"80"}
-                        height={"8"}
-                        rx={"3"}
-                        fill={"#1a3a5a"}
-                        opacity={".55"}
-                      ></rect>
-                      {"\n                            "}
-                      <rect
-                        x={"36"}
-                        y={"112"}
-                        width={"60"}
-                        height={"8"}
-                        rx={"3"}
-                        fill={"#1a3a5a"}
-                        opacity={".4"}
-                      ></rect>
-                      {"\n                            "}
-                      <rect
-                        x={"140"}
-                        y={"65"}
-                        width={"180"}
-                        height={"68"}
-                        rx={"8"}
-                        fill={"#0e2c46"}
-                        stroke={"#1a4060"}
-                        strokeWidth={"1"}
-                      ></rect>
-                      {"\n                            "}
-                      <rect
-                        x={"150"}
-                        y={"78"}
-                        width={"95"}
-                        height={"8"}
-                        rx={"3"}
-                        fill={"#2a6080"}
-                        opacity={".7"}
-                      ></rect>
-                      {"\n                            "}
-                      <rect
-                        x={"295"}
-                        y={"80"}
-                        width={"24"}
-                        height={"14"}
-                        rx={"7"}
-                        fill={"#1a4060"}
-                      ></rect>
-                      {"\n                            "}
-                      <rect
-                        x={"308"}
-                        y={"83"}
-                        width={"8"}
-                        height={"8"}
-                        rx={"4"}
-                        fill={"#4ae8b8"}
-                      ></rect>
-                      {"\n                            "}
-                      <rect
-                        x={"140"}
-                        y={"142"}
-                        width={"180"}
-                        height={"68"}
-                        rx={"8"}
-                        fill={"#0e2c46"}
-                        stroke={"#1a4060"}
-                        strokeWidth={"1"}
-                      ></rect>
-                      {"\n                            "}
-                      <rect
-                        x={"150"}
-                        y={"155"}
-                        width={"110"}
-                        height={"8"}
-                        rx={"3"}
-                        fill={"#2a6080"}
-                        opacity={".6"}
-                      ></rect>
-                      {"\n                            "}
-                      <rect
-                        x={"295"}
-                        y={"156"}
-                        width={"24"}
-                        height={"14"}
-                        rx={"7"}
-                        fill={"#1a4060"}
-                      ></rect>
-                      {"\n                            "}
-                      <rect
-                        x={"298"}
-                        y={"159"}
-                        width={"8"}
-                        height={"8"}
-                        rx={"4"}
-                        fill={"#2a5070"}
-                      ></rect>
-                      {"\n                            "}
-                      <rect
-                        x={"336"}
-                        y={"65"}
-                        width={"224"}
-                        height={"68"}
-                        rx={"8"}
-                        fill={"#0e2c46"}
-                        stroke={"#1a4060"}
-                        strokeWidth={"1"}
-                      ></rect>
-                      {"\n                            "}
-                      <text
-                        x={"440"}
-                        y={"105"}
-                        textAnchor={"middle"}
-                        fontSize={"26"}
-                        fontWeight={"800"}
-                        fill={"#4ae8b8"}
-                        fontFamily={"Inter,sans-serif"}
-                      >
-                        <T>{"24°C"}</T>
-                      </text>
-                      {"\n                            "}
-                      <rect
-                        x={"336"}
-                        y={"142"}
-                        width={"224"}
-                        height={"68"}
-                        rx={"8"}
-                        fill={"#0e2c46"}
-                        stroke={"#1a4060"}
-                        strokeWidth={"1"}
-                      ></rect>
-                      {"\n                            "}
-                      <rect
-                        x={"346"}
-                        y={"155"}
-                        width={"80"}
-                        height={"8"}
-                        rx={"3"}
-                        fill={"#2a6080"}
-                        opacity={".6"}
-                      ></rect>
-                      {"\n                            "}
-                      <polyline
-                        points={
-                          "346,195 366,180 386,188 406,172 426,178 446,165 466,170 486,158 506,162 546,155"
-                        }
-                        stroke={"#4ae8b8"}
-                        strokeWidth={"1.5"}
-                        fill={"none"}
-                        opacity={".7"}
-                      ></polyline>
-                      {"\n                        "}
-                    </svg>
-                    {"\n                    "}
-                  </div>
-                  {"\n                    "}
-                  <div className={"case-body"}>
-                    {"\n                        "}
-                    <div className={"case-ttl"}>
-                      <T>
-                        {
-                          "2Smart Standalone – Developing an Intelligent IoT Building Automation\n                            System"
-                        }
-                      </T>
-                    </div>
-                    {"\n                        "}
-                    <div className={"case-desc"}>
-                      <T>
-                        {
-                          "Architecture framework for building a business in various areas of IoT\n                        "
-                        }
-                      </T>
-                    </div>
-                    {"\n                        "}
-                    <span className={"case-link"}>
-                      <T>{"Learn more... "}</T>
-                      <span className={"arr-sm"}></span>
-                    </span>
-                    {"\n                    "}
-                  </div>
-                  {"\n                "}
-                </RouteLink>
-                {"\n            "}
-              </div>
-              {"\n            "}
-              <div className={"sec-btn-row"}>
-                <RouteLink href={"#"} className={"btn-blue"}>
-                  <T>{"Browse More"}</T>
-                </RouteLink>
-              </div>
-              {"\n        "}
-            </div>
-          </Reveal>
-          {"\n    "}
-        </section>
-      </HomeSection>
+      <HomeSection sectionKey="cases" />
       {"\n\n    "}
       {"\n    "}
       <div className={"cta-sec"}>
@@ -2514,28 +2007,28 @@ export default function Page() {
               </div>
               {"\n                    "}
               <div className={"ft-col-links"}>
-                <RouteLink href={"#"}>
+                <RouteLink href="/ai-development">
                   <T>{"AI Development"}</T>
                 </RouteLink>
-                <RouteLink href={"#"}>
+                <RouteLink href="/ai-agent-development">
                   <T>{"AI Agent Development"}</T>
                 </RouteLink>
-                <RouteLink href={"#"}>
+                <RouteLink href="/fintech-development">
                   <T>{"Fintech Software Development"}</T>
                 </RouteLink>
-                <RouteLink href={"#"}>
+                <RouteLink href="/blockchain-development">
                   <T>{"Blockchain Development"}</T>
                 </RouteLink>
-                <RouteLink href={"#"}>
+                <RouteLink href="/iot-development">
                   <T>{"IoT Development Services"}</T>
                 </RouteLink>
-                <RouteLink href={"#"}>
+                <RouteLink href="/smart-home-solutions">
                   <T>{"IoT Smart Home Solutions"}</T>
                 </RouteLink>
-                <RouteLink href={"#"}>
+                <RouteLink href="/ecommerce-development">
                   <T>{"eCommerce Platform Development"}</T>
                 </RouteLink>
-                <RouteLink href={"#"}>
+                <RouteLink href="/full-cycle-development">
                   <T>{"Full-cycle Development"}</T>
                 </RouteLink>
               </div>
@@ -2559,22 +2052,22 @@ export default function Page() {
               </div>
               {"\n                    "}
               <div className={"ft-col-links"}>
-                <RouteLink href={"#"}>
+                <RouteLink href="/who-we-are">
                   <T>{"Who We Are"}</T>
                 </RouteLink>
-                <RouteLink href={"#"}>
+                <RouteLink href="/careers">
                   <T>{"Careers"}</T>
                 </RouteLink>
-                <RouteLink href={"#"}>
+                <RouteLink href="/leadership">
                   <T>{"Leadership"}</T>
                 </RouteLink>
-                <RouteLink href={"#"}>
+                <RouteLink href="/news">
                   <T>{"News"}</T>
                 </RouteLink>
-                <RouteLink href={"#"}>
+                <RouteLink href="/opensource">
                   <T>{"Opensource"}</T>
                 </RouteLink>
-                <RouteLink href={"#"}>
+                <RouteLink href="/contact">
                   <T>{"Contacts"}</T>
                 </RouteLink>
               </div>
@@ -2598,26 +2091,26 @@ export default function Page() {
               </div>
               {"\n                    "}
               <div className={"ft-col-links"}>
-                <RouteLink href={"#"}>
+                <RouteLink href="/smart-hvac">
                   <T>{"Smart Automated A/C Drain Line Cleaner"}</T>
                 </RouteLink>
-                <RouteLink href={"#"}>
+                <RouteLink href="/market-access">
                   <T>
                     {
                       "AI-Based\n                            Market Access Planning Tool"
                     }
                   </T>
                 </RouteLink>
-                <RouteLink href={"#"}>
+                <RouteLink href="/ev-charging">
                   <T>{"Cloud ecosystem for EV charging"}</T>
                 </RouteLink>
-                <RouteLink href={"#"}>
+                <RouteLink href="/iot-cloud-platform">
                   <T>{"IoT cloud platform"}</T>
                 </RouteLink>
-                <RouteLink href={"#"}>
-                  <T>{"KYC Onboarding Software"}</T>
+                <RouteLink href="/projects">
+                  <T>{"Browse all projects"}</T>
                 </RouteLink>
-                <RouteLink href={"#"}>
+                <RouteLink href="/multi-currency-wallet">
                   <T>{"Multi-currency Wallet"}</T>
                 </RouteLink>
               </div>
@@ -2641,30 +2134,11 @@ export default function Page() {
               </div>
               {"\n                    "}
               <div className={"ft-col-links"}>
-                <RouteLink href={"#"}>
-                  <T>{"20 IoT Business Ideas & Opportunities"}</T>
-                </RouteLink>
-                <RouteLink href={"#"}>
-                  <T>
-                    {
-                      "Smart\n                            Home Automation Using IoT"
-                    }
-                  </T>
-                </RouteLink>
-                <RouteLink href={"#"}>
-                  <T>{"8 IoT Issues and Ways to Solve Them"}</T>
-                </RouteLink>
-                <RouteLink href={"#"}>
-                  <T>{"IoT in Energy Management"}</T>
-                </RouteLink>
-                <RouteLink href={"#"}>
-                  <T>{"Raspberry Pi vs Arduino"}</T>
-                </RouteLink>
-                <RouteLink href={"#"}>
-                  <T>
-                    {"IoT\n                            in Water Management"}
-                  </T>
-                </RouteLink>
+                {(site.blogs?.length ? site.blogs.slice(0, 6) : localBlogPosts).map((post) => (
+                  <RouteLink key={post._id || post.slug} href={`/blog/${encodeURIComponent(post.slug || post._id)}`}>
+                    <T>{post.title}</T>
+                  </RouteLink>
+                ))}
               </div>
               {"\n                "}
             </FooterColumn>
@@ -2682,21 +2156,21 @@ export default function Page() {
             </span>
             {"\n                "}
             <div className={"ft-links"}>
-              <RouteLink href={"#"}>
-                <T>{"Privacy Policy"}</T>
+              <RouteLink href="mailto:sakinzo.work@gmail.com?subject=Privacy%20enquiry">
+                <T>{"Privacy enquiries"}</T>
               </RouteLink>
-              <RouteLink href={"#"}>
-                <T>{"Terms and conditions"}</T>
+              <RouteLink href="mailto:sakinzo.work@gmail.com?subject=Terms%20enquiry">
+                <T>{"Terms enquiries"}</T>
               </RouteLink>
-              <RouteLink href={"#"}>
+              <RouteLink href="mailto:sakinzo.work@gmail.com?subject=Accessibility%20enquiry">
                 <T>
-                  {"Web\n                        Content Accessibility Policy"}
+                  {"Accessibility enquiries"}
                 </T>
               </RouteLink>
-              <RouteLink href={"#"}>
-                <T>{"Cookie Policy"}</T>
+              <RouteLink href="mailto:sakinzo.work@gmail.com?subject=Cookie%20enquiry">
+                <T>{"Cookie enquiries"}</T>
               </RouteLink>
-              <RouteLink href={"#"}>
+              <RouteLink href="/sitemap.xml">
                 <T>{"Sitemap"}</T>
               </RouteLink>
             </div>

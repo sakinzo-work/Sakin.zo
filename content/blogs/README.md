@@ -5,23 +5,24 @@ architecture, AI tools, and business web development. `posts.json` holds the
 metadata; the Markdown files hold the article bodies. The author is Sakinzo Team.
 References appear inside each guide. Covers reuse the site's existing images.
 
-From the repository root, preview and validate the batch without publishing:
+From the React project folder, preview and validate the batch without publishing:
 
 ```bash
-node scripts/publish-blogs.js
+node scripts/publish-blogs.cjs
 ```
 
 To publish, configure `ADMIN_EMAIL` and `ADMIN_PASSWORD` in the process
 environment or the private `backend/.env`, then run:
 
 ```bash
-node scripts/publish-blogs.js --publish
+node scripts/publish-blogs.cjs --publish
 ```
 
 The default API is `https://sakinzo.onrender.com/api`; `BLOG_API_BASE` can select
 another deployment. The command creates four visible blog records and matching
-homepage insight cards. It verifies public article content afterward. Existing
-identical articles are skipped, while edited or hidden matches require review.
+homepage insight cards with canonical Vercel article URLs. It verifies public
+article content afterward. Existing identical articles are skipped, while
+edited or hidden matches require review.
 No existing article is overwritten, and no ratings are invented. Publish time
 is set when records are created; read times are estimated from word counts.
 

@@ -26,7 +26,7 @@ function PostCard({ post }) {
   return (
     <article className="post-card">
       <RouteLink
-        href={`/blog?slug=${encodeURIComponent(post.slug || post._id)}`}
+        href={`/blog/${encodeURIComponent(post.slug || post._id)}`}
       >
         <div className="post-cover">
           <T>

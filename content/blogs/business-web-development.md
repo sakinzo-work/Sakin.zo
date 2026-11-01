@@ -74,7 +74,7 @@ Check navigation on mobile, keyboard access, image loading, broken links and for
 
 After launch, review actual user journeys and support questions. Use that evidence to decide the next improvement. A smaller website with clear content and dependable interactions provides a stronger foundation for future features.
 
-Explore our [web and mobile development services](web-mobile-development.html) or [full-cycle development services](full-cycle-development.html) to plan the work from brief through operation.
+Explore our [web and mobile development services](/web-mobile-development) or [full-cycle development services](/full-cycle-development) to plan the work from brief through operation.
 
 ## Further reading
 
