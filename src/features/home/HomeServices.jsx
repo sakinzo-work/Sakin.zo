@@ -3,7 +3,7 @@ import { T } from "../../context/LanguageContext.jsx";
 import RouteLink from "../../components/AppLink.jsx";
 import Reveal from "../../components/Reveal.jsx";
 import { HomeSection } from "./HomeContent.jsx";
-import ServiceIllustration from "./ServiceIllustration.jsx";
+import ServiceArtwork from "./ServiceArtwork.jsx";
 
 const services = [
   {
@@ -51,7 +51,7 @@ export default function HomeServices() {
       <Reveal><div className="wrap sec reveal">
         <div className="sec-hd"><h2 className="sec-title"><T>Services</T></h2></div>
         <div className="svc-layout">
-          <div className="svc-img" id="svcImg"><ServiceIllustration service={services[active]} /></div>
+          <div className="svc-img" id="svcImg"><ServiceArtwork key={services[active].slug} service={services[active]} /></div>
           <div className="svc-list">
             {services.map((service, index) => {
               const open = active === index;
@@ -72,6 +72,7 @@ export default function HomeServices() {
                   </button>
                 </h3>
                 <div className="svc-body" id={`svc-panel-${service.slug}`} role="region" aria-labelledby={`svc-heading-${service.slug}`} hidden={!open}>
+                  {open && <ServiceArtwork key={service.slug} service={service} className="svc-artwork-mobile" />}
                   {service.intro && <p><T text={service.intro} /></p>}
                   <ul>{service.points.map(point => <li key={point}><T text={point} /></li>)}</ul>
                   <RouteLink className="svc-link" href={`/${service.slug}`}><T text={service.action} /> <span className="arr-sm" aria-hidden="true" /></RouteLink>

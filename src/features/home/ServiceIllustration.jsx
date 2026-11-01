@@ -110,7 +110,7 @@ function Artwork({ kind }) {
 
 export default function ServiceIllustration({ service }) {
   const titleId = useId();
-  return <svg key={service.slug} id="svcSvg" className="svc-illustration" width="440" height="340"
+  return <svg key={service.slug} className="svc-illustration" width="440" height="340"
     viewBox="0 0 440 340" fill="none" role="img" aria-labelledby={titleId} data-service={service.slug}>
     <title id={titleId}><T text={service.title} /></title>
     <Artwork kind={service.slug} />

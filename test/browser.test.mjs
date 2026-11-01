@@ -1154,7 +1154,7 @@ await test("missing blog images have a cover fallback and article URLs have load
   } finally { release(); await close(); }
 });
 
-await test("homepage service illustrations, panels and plus/minus controls stay synchronized", async () => {
+await test("homepage service images, panels and plus/minus controls stay synchronized on desktop and mobile", async () => {
   const { page, open, errors, close } = await session();
   const items = [
     ["web-mobile-development", "Web and Mobile Development"],
@@ -1168,9 +1168,9 @@ await test("homepage service illustrations, panels and plus/minus controls stay 
   try {
     await open("/");
     const section = page.locator("#sec-services");
-    const artwork = section.locator("#svcSvg");
-    const drawings = new Set();
-    for (const width of [1440, 1025, 390, 320]) {
+    const artwork = section.locator("#svcImg .svc-artwork");
+    const images = new Set();
+    for (const width of [1440, 1025, 900, 390, 320]) {
       await page.setViewportSize({ width, height: 1000 });
       for (const [slug, title] of items) {
         const trigger = section.getByRole("button", { name: title, exact: true });
@@ -1186,16 +1186,26 @@ await test("homepage service illustrations, panels and plus/minus controls stay 
         assert.equal(await panel.getAttribute("aria-labelledby"), await trigger.getAttribute("id"));
         assert.equal(await section.locator(".svc-body:visible").count(), 1);
         assert.equal(await panel.locator("a").getAttribute("href"), `/${slug}`);
+        const visibleArt = width <= 900 ? panel.locator(".svc-artwork-mobile") : artwork;
+        assert.ok(await visibleArt.isVisible());
+        const image = visibleArt.locator("img");
+        await image.scrollIntoViewIfNeeded();
+        await image.evaluate(image => image.decode());
+        await visibleArt.locator(".svc-service-image.is-loaded").waitFor();
+        assert.ok((await image.getAttribute("alt")).length > 30);
+        assert.ok(await image.evaluate(image => image.complete && image.naturalWidth > 0 && /-(640|1200)\.webp$/.test(image.currentSrc)));
+        assert.ok((await visibleArt.locator("source").getAttribute("srcset")).includes("640w"));
+        const box = await visibleArt.boundingBox();
+        assert.ok(Math.abs(box.width / box.height - 4 / 3) < 0.02, "The image reserves a stable 4:3 frame");
         assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `${slug} overflows at ${width}`);
         if (width === 1440) {
-          assert.ok(await artwork.isVisible());
-          assert.equal(await artwork.locator("title").textContent(), title);
-          drawings.add(await artwork.evaluate(svg => [...svg.querySelectorAll("path,rect,circle,ellipse")].map(shape => [...shape.attributes].map(attr => `${attr.name}=${attr.value}`).join(";")).join("|")));
+          images.add(await image.evaluate(image => image.currentSrc));
           await section.locator("#svcImg").screenshot({ path: path.join(root, `test-results/service-art-${slug}.png`) });
         }
+        if (width === 390) await section.locator(".svc-item.open").screenshot({ path: path.join(root, `test-results/service-art-mobile-${slug}.png`) });
       }
     }
-    assert.equal(drawings.size, 7, "Every service needs its own illustration");
+    assert.equal(images.size, 7, "Every service needs its own generated image");
     await page.setViewportSize({ width: 1440, height: 1000 });
     const qa = section.getByRole("button", { name: "QA & Testing", exact: true });
     await qa.focus();
@@ -1214,6 +1224,45 @@ await test("homepage service illustrations, panels and plus/minus controls stay 
     await page.getByRole("heading", { name: services.find(service => service.slug === "devops-solutions").headline, exact: true }).waitFor();
     assert.deepEqual(errors, []);
   } finally { await close(); }
+});
+
+await test("service images have a stable loading frame and a matching illustration fallback when files fail", async () => {
+  const { page, open, errors, close } = await session();
+  let release;
+  const gate = new Promise(resolve => { release = resolve; });
+  const imageRequests = [];
+  page.on("request", request => { if (/\/assets\/services-.*-3d-v1-/.test(request.url())) imageRequests.push(request.url()); });
+  await page.route("**/assets/services-web-mobile-3d-v1-*.webp", async route => { await gate; await route.continue().catch(() => {}); });
+  await page.route("**/assets/services-testing-3d-v1-*.webp", route => route.abort());
+  try {
+    await open("/");
+    const section = page.locator("#sec-services");
+    const frame = section.locator("#svcImg");
+    await frame.scrollIntoViewIfNeeded();
+    const before = await frame.boundingBox();
+    assert.ok(before.height > 200);
+    assert.ok(!imageRequests.some(url => url.includes("services-devops-")), "Unopened service images do not slow the initial page load");
+    release();
+    await frame.locator("img.is-loaded").waitFor();
+    const after = await frame.boundingBox();
+    assert.ok(Math.abs(after.height - before.height) < 1);
+    assert.ok(Math.abs(after.width - before.width) < 1);
+    await section.getByRole("button", { name: "QA & Testing", exact: true }).click();
+    await frame.getByRole("img", { name: "QA & Testing", exact: true }).waitFor();
+    assert.equal(await frame.locator("img").count(), 0);
+    assert.equal(await frame.locator("[data-service]").first().getAttribute("data-service"), "qa-testing");
+    await page.setViewportSize({ width: 390, height: 900 });
+    const panel = section.locator(".svc-item.open .svc-body");
+    await panel.locator(".svc-artwork-mobile").scrollIntoViewIfNeeded();
+    await panel.getByRole("img", { name: "QA & Testing", exact: true }).waitFor();
+    assert.ok(await panel.getByRole("img", { name: "QA & Testing", exact: true }).isVisible());
+    await section.getByRole("button", { name: "UX/UI Design", exact: true }).click();
+    const recovered = section.locator(".svc-item.open .svc-artwork-mobile img");
+    await recovered.scrollIntoViewIfNeeded();
+    await recovered.evaluate(image => image.decode());
+    assert.ok(await recovered.evaluate(image => image.complete && image.naturalWidth > 0));
+    assert.deepEqual(errors, []);
+  } finally { release(); await close(); }
 });
 
 await test("admin startup avoids overlapping syncs and recovers from failed, stalled and expired sessions", async () => {
