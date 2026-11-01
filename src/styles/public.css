@@ -7,6 +7,10 @@
 body:not([data-page]) .route-loading .content-state { display: flex; flex-direction: column; align-items: center; gap: 20px; padding: 40px 24px; border: 1px solid #dfe8f4; border-radius: 20px; background: #fff; text-align: center; }
 body:not([data-page]) .route-loading .content-state-action { min-height: 44px; padding: 11px 22px; border: 0; border-radius: 100px; background: #1673ff; color: #fff; font: 700 14px Inter, Arial, sans-serif; }
 .remote-refresh-note { padding-top: 24px; }
+.blog-image-fallback { display: grid; place-items: center; width: 100%; min-height: 200px; background: linear-gradient(135deg, #071426, #154780); color: #a5ceff; }
+.blog-image-fallback svg { width: 56px; height: 56px; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.blog-article-state { box-sizing: border-box; width: 100%; max-width: 900px; margin: 0 auto; padding: 120px 24px 80px; }
+.blog-back-link { display: block; width: fit-content; margin: 24px auto 0; color: #1673ff; font: 600 14px/1.6 Inter, Arial, sans-serif; text-decoration: none; }
 body[data-page] { --site-header-height: 68px; }
 body[data-page] :is(section[id], main[id], footer[id]) { scroll-margin-top: calc(var(--site-header-height) + 24px); }
 body[data-page] :is(button, a, input, textarea):focus-visible { outline: 3px solid #68a8ff; outline-offset: 4px; }

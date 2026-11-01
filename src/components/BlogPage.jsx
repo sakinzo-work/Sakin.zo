@@ -9,6 +9,7 @@ import Markdown from "./Markdown.jsx";
 import { parseMarkdown } from "../lib/markdown.js";
 import useRemoteData from "../hooks/useRemoteData.js";
 import ContentState from "./ContentState.jsx";
+import BlogImage from "./BlogImage.jsx";
 import useDocumentMeta from "../hooks/useDocumentMeta.js";
 import { mediaUrl } from "../lib/api.js";
 import covers from "../data/page-covers.js";
@@ -29,15 +30,15 @@ function PostCard({ post }) {
       >
         <div className="post-cover">
           <T>
-            {post.coverImage && (
               <Localized>
-                <img
-                  src={mediaUrl(post.coverImage)}
+                <BlogImage
+                  src={post.coverImage}
+                  category={post.category}
                   alt={post.title}
                   loading="lazy"
+                  decoding="async"
                 />
               </Localized>
-            )}
           </T>
         </div>
         <div className="post-body">
@@ -150,15 +151,15 @@ function Article({ post }) {
       <article className="article article-body">
         <div className="article-shell">
           <T>
-            {post.coverImage && (
               <Localized>
-                <img
+                <BlogImage
                   className="article-cover"
-                  src={mediaUrl(post.coverImage)}
+                  src={post.coverImage}
+                  category={post.category}
                   alt={post.title}
+                  decoding="async"
                 />
               </Localized>
-            )}
           </T>
           <T>
             {content.headings.length > 2 && (
@@ -207,10 +208,10 @@ export default function BlogPage() {
   const { data, loading, error, refresh } = useRemoteData("/blogs");
   const params = useParams(),
     [query] = useSearchParams();
-  const slug = params.slug || query.get("slug") || "";
+  const slug = params.slug || query.get("slug") || query.get("id") || "";
   const posts = Array.isArray(data) ? data : [];
   const post = slug
-    ? posts.find((item) => String(item.slug || item._id) === slug)
+    ? posts.find((item) => item.slug === slug || String(item._id) === slug)
     : null;
   return (
     <>
@@ -219,6 +220,14 @@ export default function BlogPage() {
         <T>
           {post ? (
             <Article post={post} />
+          ) : slug ? (
+            <section className="blog-article-state">
+              <ContentState heading="h1" state={loading ? "loading" : error ? "error" : "empty"}
+                title={loading ? "Loading article…" : error ? "This article couldn't be loaded" : "Article not found"}
+                description={loading ? "Your guide will be ready in a moment." : error ? "Please try again in a moment." : "Explore our other articles for more ideas and practical guides."}
+                onAction={!loading && error ? refresh : undefined} />
+              <RouteLink className="blog-back-link" href="/blog"><T>← All blogs</T></RouteLink>
+            </section>
           ) : (
             <>
               <PageHero slug="blog">

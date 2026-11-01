@@ -4,7 +4,8 @@ import AppLink from "../../components/AppLink.jsx";
 import { useSiteData, visibleItems } from "../../context/SiteDataContext.jsx";
 import { T } from "../../context/LanguageContext.jsx";
 import { mediaUrl, safeUrl } from "../../lib/api.js";
-import { assetUrl } from "../../lib/paths.js";
+import { appPath, assetUrl } from "../../lib/paths.js";
+import BlogImage from "../../components/BlogImage.jsx";
 import { projectImages } from "../../lib/project.js";
 import ContentState, { ProjectSkeletons } from "../../components/ContentState.jsx";
 export const categoryOrder = [
@@ -269,19 +270,20 @@ export function HomeInsights() {
     desc: post.excerpt,
     articleUrl: `/blog?slug=${encodeURIComponent(post.slug || post._id)}`,
   }));
+  const cards = (rows.length ? rows : fallback).map(row => ({ ...row, articleUrl: appPath(row.articleUrl || "") }));
   return (
     <div className="ins-grid" id="main-insights-grid">
-      {(rows.length ? rows : fallback).length ? (
-        (rows.length ? rows : fallback).map((row) => (
+      {cards.length ? (
+        cards.map((row) => (
           <article className="ins-card" key={row._id}>
-            {row.image && (
-              <img
+              <BlogImage
                 className="ins-img"
-                src={mediaUrl(row.image)}
+                src={row.image}
+                category={row.category}
                 alt={row.title}
                 loading="lazy"
+                decoding="async"
               />
-            )}
             <div className="ins-meta">
               <T text={row.category || ""} />
             </div>

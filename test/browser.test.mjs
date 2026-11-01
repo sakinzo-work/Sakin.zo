@@ -1047,6 +1047,112 @@ await test("incomplete saved site data does not break the homepage and stalled r
   } finally { release(); await close(); }
 });
 
+await test("legacy Render blog covers and insight links work locally across every original guide", async () => {
+  const { page, open, errors, close } = await session();
+  const posts = JSON.parse(fs.readFileSync(path.join(root, "content/blogs/posts.json"), "utf8")).map((post, index) => ({
+    ...post, _id: `original-guide-${index}`, readTime: 5,
+    body: fs.readFileSync(path.join(root, "content/blogs", post.bodyFile), "utf8"),
+  }));
+  const insights = posts.map(post => ({ ...post, image: post.coverImage, desc: post.excerpt,
+    articleUrl: `https://sakinzo-work.github.io/sakinzo/frontend/blog.html?slug=${post.slug}` }));
+  const external = { _id: "external-insight", title: "External reference", image: "https://example.test/cover.webp", articleUrl: "https://example.test/article" };
+  await page.route("**/api/blogs", route => route.fulfill({ json: posts }));
+  await page.route("**/api/public/site-data", route => route.fulfill({ json: { ...siteData, blogs: posts, insights: [...insights, external] } }));
+  const legacyRequests = [];
+  page.on("request", request => { if (request.url().startsWith("https://sakinzo-work.github.io/")) legacyRequests.push(request.url()); });
+  try {
+    await open("/");
+    await page.locator("#main-insights-grid .ins-card").first().waitFor();
+    for (let index = 0; index < posts.length; index++) {
+      const card = page.locator("#main-insights-grid .ins-card").nth(index);
+      await card.scrollIntoViewIfNeeded();
+      assert.equal(await card.locator("img").getAttribute("src"), "/assets/" + posts[index].coverImage.split("/assets/")[1]);
+      await card.locator("img").evaluate(image => image.decode());
+      assert.equal(await card.locator("a").getAttribute("href"), `/blog?slug=${posts[index].slug}`);
+      assert.equal(await card.locator("a").getAttribute("target"), null);
+    }
+    const externalLink = page.locator('#main-insights-grid a[href="https://example.test/article"]');
+    assert.equal(await externalLink.getAttribute("target"), "_blank");
+    await page.locator("#main-insights-grid .ins-card a").first().click();
+    await page.getByRole("heading", { name: posts[0].title, exact: true }).waitFor();
+    for (const width of [1440, 390]) {
+      await page.setViewportSize({ width, height: 900 });
+      await open("/blog");
+      assert.equal(await page.locator(".post-card").count(), 4);
+      for (const image of await page.locator(".post-cover img").all()) {
+        await image.scrollIntoViewIfNeeded();
+        await image.evaluate(node => node.decode());
+      }
+      for (const post of posts) {
+        await page.locator(`.post-card a[href="/blog?slug=${post.slug}"]`).click();
+        await page.getByRole("heading", { name: post.title, exact: true }).waitFor();
+        await page.locator(".article-cover").evaluate(image => image.decode());
+        await page.locator(".page-hero-image").evaluate(image => image.decode());
+        assert.ok(await page.locator(".article-content h2").count() > 2);
+        const toc = page.locator(".article-toc a").first();
+        await toc.click();
+        assert.ok(new URL(page.url()).hash.startsWith("#guide-"));
+        assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+        await page.locator(".article-header .back").click();
+        await page.locator(".post-card").first().waitFor();
+      }
+    }
+    await open("/blog/" + posts[0]._id);
+    await page.getByRole("heading", { name: posts[0].title, exact: true }).waitFor();
+    await open("/blog/" + posts[0].slug);
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.getByRole("heading", { name: posts[0].title, exact: true }).waitFor();
+    await page.locator(".article-cover").evaluate(image => image.decode());
+    await page.screenshot({ path: path.join(root, "test-results/blog-fixed-mobile.png"), fullPage: false });
+    assert.deepEqual(legacyRequests, []);
+    assert.deepEqual(errors, []);
+  } finally { await close(); }
+});
+
+await test("missing blog images have a cover fallback and article URLs have loading, retry and missing states", async () => {
+  const { page, open, errors, close } = await session();
+  let mode = "hold", release;
+  const gate = new Promise(resolve => { release = resolve; });
+  await page.route("**/api/blogs", async route => {
+    if (mode === "hold") await gate;
+    await route.fulfill(mode === "error" ? { status: 503, json: {} } :
+      { json: [{ ...article, category: "AI Development", coverImage: "https://sakinzo-work.github.io/sakinzo/frontend/assets/missing-cover.webp" }] }).catch(() => {});
+  });
+  try {
+    await open("/blog/engineering-guide");
+    await page.getByRole("heading", { name: "Loading article…", exact: true }).waitFor();
+    assert.equal(await page.locator(".blog-grid").count(), 0);
+    mode = "error"; release();
+    await page.getByRole("heading", { name: "This article couldn't be loaded", exact: true }).waitFor();
+    mode = "success";
+    await page.getByRole("button", { name: "Try again", exact: true }).click();
+    await page.getByRole("heading", { name: article.title, exact: true }).waitFor();
+    await page.waitForFunction(() => {
+      const image = document.querySelector(".article-cover");
+      return image?.complete && image.naturalWidth > 0 && image.getAttribute("src") === "/assets/service-ai.webp";
+    });
+    await page.locator(".article-header .back").click();
+    await page.waitForFunction(() => {
+      const image = document.querySelector(".post-cover img");
+      return image?.complete && image.naturalWidth > 0 && image.getAttribute("src") === "/assets/service-ai.webp";
+    });
+    await page.route("**/assets/service-ai.webp", route => route.abort());
+    await open("/blog");
+    await page.waitForFunction(() => {
+      const image = document.querySelector(".post-cover img");
+      return image?.complete && image.naturalWidth > 0 && image.getAttribute("src") === "/assets/page-insights.webp";
+    });
+    await page.route("**/assets/page-insights.webp", route => route.abort());
+    await open("/blog");
+    await page.locator(".post-cover .blog-image-fallback").waitFor();
+    assert.equal(await page.locator(".post-cover img").count(), 0);
+    await open("/blog/not-a-published-article");
+    await page.getByRole("heading", { name: "Article not found", exact: true }).waitFor();
+    assert.equal(await page.locator(".blog-grid").count(), 0);
+    assert.deepEqual(errors, []);
+  } finally { release(); await close(); }
+});
+
 await browser.close();
 await new Promise((resolve) => {
   server.close(resolve);

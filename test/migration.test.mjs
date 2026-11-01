@@ -6,9 +6,22 @@ import crypto from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { parse } from "parse5";
 import { parseMarkdown, safeMarkdownLink } from "../src/lib/markdown.js";
+import { appPath, assetUrl } from "../src/lib/paths.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const walk = (node) => [node, ...(node.childNodes || []).flatMap(walk)];
+
+test("former owned frontend links migrate without changing other sites or uploads", () => {
+  assert.equal(appPath("https://sakinzo-work.github.io/sakinzo/frontend/blog.html?slug=guide#overview"), "/blog?slug=guide#overview");
+  assert.equal(appPath("https://sakinzo-work.github.io/Sakin.zo/frontend/contactus.html#form-section"), "/contact#form-section");
+  assert.equal(assetUrl("https://sakinzo-work.github.io/sakinzo/frontend/assets/service-ai.webp?v=2"), "/assets/service-ai.webp?v=2");
+  assert.equal(assetUrl("//sakinzo-work.github.io/sakinzo/frontend/assets/service-iot.webp"), "/assets/service-iot.webp");
+  for (const value of ["https://example.com/assets/cover.webp", "https://sakinzo-work.github.io/another-repo/frontend/blog.html", "https://sakinzo-work.github.io.example.com/sakinzo/frontend/blog.html"]) {
+    assert.equal(appPath(value), value);
+    assert.equal(assetUrl(value), value);
+  }
+  assert.equal(assetUrl("/uploads/custom-cover.webp"), "/uploads/custom-cover.webp");
+});
 
 test("migration preserves every inventoried original file byte for byte", (context) => {
   const inventory = JSON.parse(
