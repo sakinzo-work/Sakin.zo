@@ -1348,6 +1348,162 @@ await test("admin Game category dropdown and styled image, gallery and video con
   } finally { releaseVideo(); await close(); }
 });
 
+await test("approval inbox renders readable changes and preserves review notes, filters and failure recovery", async () => {
+  const { page, open, errors, close } = await session();
+  const picture = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl6CKsAAAAASUVORK5CYII=";
+  const approvals = [
+    { _id: "profile-review", title: "Profile update", resourceType: "admins", action: "profile-update", requester: "employee-fixture", requesterName: "Team member", status: "pending", createdAt: "2026-10-31T12:00:00Z", payload: { name: "Updated name", profileImage: picture, phone: "1234567890", password: "must-never-be-rendered", permissions: ["projects", "blogs"] } },
+    { _id: "visibility-review", title: "Hide projects", resourceType: "sections", action: "update", requester: "employee-fixture", requesterName: "Team member", status: "pending", payload: { enabled: false } },
+    { _id: "approved-review", title: "Previous profile update", resourceType: "admins", action: "profile-update", requesterName: "Team member", status: "approved", payload: { profileImage: picture, bio: "Developer" }, reviewedByName: "Test owner", reviewedAt: "2026-10-31T13:00:00Z", reviewNote: "Looks good" },
+    { _id: "rejected-review", title: "Delete blog", resourceType: "blogs", action: "delete", status: "rejected", payload: {} },
+  ];
+  const decisions = [];
+  let failReview = true;
+  await page.addInitScript(() => sessionStorage.setItem("sakinzo_admin_token", "mock-admin-session"));
+  await page.route("**/api/approvals**", async route => {
+    const request = route.request(), match = new URL(request.url()).pathname.match(/\/approvals\/([^/]+)\/(approve|reject)$/);
+    if (!match) return route.fulfill({ json: approvals });
+    if (match[2] === "reject" && failReview) { failReview = false; return route.fulfill({ status: 503, json: { message: "Review service unavailable. Try again." } }); }
+    const row = approvals.find(row => row._id === match[1]);
+    Object.assign(row, { status: match[2] === "approve" ? "approved" : "rejected", ...request.postDataJSON(), reviewedByName: "Test owner" });
+    decisions.push({ id: row._id, decision: match[2], note: row.reviewNote });
+    await route.fulfill({ json: row });
+  });
+  try {
+    await open("/admin/approvals");
+    await page.locator(".approval-card").first().waitFor();
+    assert.equal(await page.locator(".approval-card").count(), 4);
+    assert.equal(await page.locator(".approval-payload, .approval-card pre").count(), 0);
+    const text = await page.locator("#pages").textContent();
+    assert.ok(!text.includes("base64") && !text.includes("must-never-be-rendered"));
+    const preview = page.locator(".approval-card").first().getByRole("img", { name: "Profile picture", exact: true });
+    await preview.waitFor();
+    assert.ok(await preview.evaluate(image => image.complete && image.naturalWidth > 0));
+    assert.equal(await page.locator(".approval-card").nth(2).locator("details").getAttribute("open"), null);
+    await page.getByRole("button", { name: /^Pending 2$/ }).click();
+    assert.equal(await page.locator(".approval-card").count(), 2);
+    await page.locator(".approval-card").first().getByRole("button", { name: "Approve", exact: true }).click();
+    const dialog = page.getByRole("alertdialog");
+    await dialog.getByRole("textbox", { name: "Review note" }).fill("Photo and details checked");
+    await dialog.getByRole("button", { name: "Confirm", exact: true }).focus();
+    await page.keyboard.press("Tab");
+    assert.equal(await page.evaluate(() => document.activeElement.tagName), "TEXTAREA");
+    await dialog.getByRole("button", { name: "Confirm", exact: true }).click();
+    await page.waitForFunction(() => document.querySelectorAll(".approval-card").length === 1);
+    assert.deepEqual(decisions[0], { id: "profile-review", decision: "approve", note: "Photo and details checked" });
+    await page.getByRole("button", { name: "Reject", exact: true }).click();
+    await page.keyboard.press("Escape");
+    assert.equal(await dialog.count(), 0);
+    assert.equal(decisions.length, 1);
+    await page.getByRole("button", { name: "Reject", exact: true }).click();
+    await dialog.getByRole("textbox", { name: "Review note" }).fill("Keep projects visible");
+    await dialog.getByRole("button", { name: "Confirm", exact: true }).click();
+    await page.getByRole("alert").filter({ hasText: "Review service unavailable" }).waitFor();
+    assert.equal(await page.locator(".approval-card").count(), 1);
+    assert.ok(await page.getByRole("button", { name: "Reject", exact: true }).isEnabled());
+    await page.getByRole("button", { name: "Reject", exact: true }).click();
+    await dialog.getByRole("textbox", { name: "Review note" }).fill("Keep projects visible");
+    await dialog.getByRole("button", { name: "Confirm", exact: true }).click();
+    await page.getByText("You're all caught up", { exact: true }).waitFor();
+    assert.deepEqual(decisions[1], { id: "visibility-review", decision: "reject", note: "Keep projects visible" });
+    await page.getByRole("button", { name: /^Approved 2$/ }).click();
+    assert.equal(await page.locator(".approval-card").count(), 2);
+    assert.ok((await page.locator(".approval-list").textContent()).includes("Photo and details checked"));
+    assert.deepEqual(errors, []);
+  } finally { await close(); }
+});
+
+await test("admin settings, profile and directory remain usable across mobile, desktop and both themes", async () => {
+  const { page, open, errors, close } = await session();
+  const picture = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl6CKsAAAAASUVORK5CYII=";
+  const identity = { ...admin, profileImage: picture, employeeId: "EMP-01", phone: "1234567890", bio: "Team owner" };
+  const saves = [], sections = [{ key: "cases", enabled: false }];
+  const services = [{ key: "iot", label: "IoT development services", enabled: true }, { key: "fintech", label: "Fintech Software Development Services", enabled: false }];
+  await page.addInitScript(() => sessionStorage.setItem("sakinzo_admin_token", "mock-admin-session"));
+  await page.route("**/api/auth/me", route => route.fulfill({ json: { admin: identity } }));
+  await page.route("**/api/admins**", async route => {
+    if (route.request().method() === "PUT") { const body = route.request().postDataJSON(); saves.push(body); Object.assign(identity, body); return route.fulfill({ json: identity }); }
+    await route.fulfill({ json: [identity, { _id: "teammate", name: "Asha Sharma", email: "asha@example.test", role: "employee", employeeId: "EMP-02", profileImage: "assets/missing-employee.png", permissions: ["projects", "blogs", "contactPage"], active: true }] });
+  });
+  for (const [endpoint, rows] of [["sections", sections], ["what-we-do-services", services]]) await page.route(`**/api/${endpoint}**`, async route => {
+    if (route.request().method() === "PUT") {
+      const key = new URL(route.request().url()).pathname.split("/").at(-1);
+      let row = rows.find(row => row.key === key);
+      if (!row) { row = { key }; rows.push(row); }
+      Object.assign(row, route.request().postDataJSON());
+      return route.fulfill({ json: row });
+    }
+    await route.fulfill({ json: rows });
+  });
+  await page.route("**/api/contact-offices**", route => route.fulfill({ json: [{ _id: "office", label: "Thane office", city: "Thane", address: "Mumbai Metropolitan Region", country: "India", visible: true }] }));
+  await page.route("**/api/approvals", route => route.fulfill({ json: [{ _id: "visual-review", title: "Profile update", resourceType: "admins", action: "profile-update", requesterName: "Asha Sharma", status: "pending", payload: { name: "Asha Sharma", profileImage: picture, phone: "1234567890", bio: "Product designer" }, createdAt: "2026-10-31T12:00:00Z" }] }));
+  try {
+    await open("/admin/sections");
+    const hero = page.getByRole("switch", { name: "Show Hero banner on homepage", exact: true });
+    await hero.waitFor();
+    assert.equal(await hero.getAttribute("aria-checked"), "true");
+    await hero.click();
+    await page.waitForFunction(() => document.querySelector('[role="switch"][aria-label="Show Hero banner on homepage"]')?.getAttribute("aria-checked") === "false");
+    assert.equal(sections.find(row => row.key === "hero").enabled, false);
+    await open("/admin/whatWeDoServices");
+    await page.getByRole("switch", { name: "Show Fintech Software Development Services on homepage", exact: true }).click();
+    await page.waitForFunction(() => document.querySelectorAll('[role="switch"][aria-checked="true"]').length === 2);
+    await open("/admin/contactPage");
+    await page.locator("#contactSettingsForm").waitFor();
+    assert.equal(await page.getByRole("heading", { name: "Offices", exact: true }).count(), 1);
+    assert.equal(await page.getByRole("button", { name: /\+ Add Office/ }).count(), 1);
+    assert.equal(await page.locator("#contactSettingsForm fieldset").count(), 4);
+    await open("/admin/profile");
+    await page.locator("#profileForm").waitFor();
+    assert.ok(!(await page.locator("#pages").textContent()).includes("base64"));
+    assert.equal(await page.locator('#profileForm input[name="profileImage"]').count(), 0);
+    await page.locator('#profileForm input[name="name"]').fill("Updated owner");
+    await page.getByRole("button", { name: "Save profile", exact: true }).click();
+    await page.getByRole("status").filter({ hasText: "Profile saved" }).waitFor();
+    assert.equal(saves[0].profileImage, picture, "saving text fields preserves the uploaded profile picture");
+    await page.getByRole("button", { name: "Remove picture", exact: true }).click();
+    await page.getByRole("button", { name: "Save profile", exact: true }).click();
+    await page.waitForFunction(() => document.querySelector(".profile-card .avatar-initials"));
+    assert.equal(saves[1].profileImage, "");
+    await open("/admin/admins");
+    await page.locator(".employee-card").first().waitFor();
+    await page.getByRole("textbox", { name: "Search employee", exact: true }).fill("asha");
+    assert.equal(await page.locator(".employee-card").count(), 1);
+    await page.locator(".employee-permissions summary").click();
+    assert.ok((await page.locator(".employee-permissions").textContent()).includes("Contact Page"));
+    await page.locator(".employee-card .avatar-initials").waitFor();
+    assert.equal(await page.locator(".employee-card .avatar-initials").textContent(), "AS");
+    for (const [width, theme] of [[1440, "dark"], [390, "dark"], [320, "light"]]) {
+      await page.setViewportSize({ width, height: 950 });
+      if ((await page.locator("html").getAttribute("data-theme")) !== theme) await page.locator("#themeToggle").click();
+      for (const section of ["approvals", "sections", "whatWeDoServices", "contactPage", "blogs", "profile", "admins"]) {
+        await open(`/admin/${section}`);
+        await page.locator("#app").waitFor();
+        await page.locator("#pages .card").first().waitFor();
+        assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `${section} viewport overflow at ${width}`);
+        const overflow = await page.locator("#pages").evaluate(element => element.scrollWidth > element.clientWidth + 1);
+        assert.equal(overflow, false, `${section} content overflow at ${width}`);
+        if (width !== 320) await page.screenshot({ path: path.join(root, `test-results/admin-clean-${section}-${width}.png`), fullPage: true });
+      }
+    }
+    assert.deepEqual(errors, []);
+  } finally { await close(); }
+});
+
+await test("managers cannot review their own pending request", async () => {
+  const { page, open, errors, close } = await session({ employee: true });
+  const identity = { ...admin, role: "admin", canSaveDirect: false, canManageAccess: true };
+  await page.addInitScript(() => sessionStorage.setItem("sakinzo_admin_token", "mock-admin-session"));
+  await page.route("**/api/auth/me", route => route.fulfill({ json: { admin: identity } }));
+  await page.route("**/api/approvals", route => route.fulfill({ json: [{ _id: "own-review", title: "My profile update", resourceType: "admins", action: "profile-update", status: "pending", requester: identity.id, payload: { name: "Manager" } }] }));
+  try {
+    await open("/admin/approvals");
+    await page.locator(".approval-card").waitFor();
+    assert.equal(await page.getByRole("button", { name: /^(Approve|Reject)$/ }).count(), 0);
+    assert.deepEqual(errors, []);
+  } finally { await close(); }
+});
+
 await browser.close();
 await new Promise((resolve) => {
   server.close(resolve);

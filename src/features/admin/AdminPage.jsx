@@ -202,14 +202,39 @@ function AdminScreen() {
   if (!user || !synced)
     return (
       <main className="admin-startup">
-        <div className="admin-startup-card" role={error && !loading ? "alert" : "status"}>
-          <div className="login-brand-name">Sakin<span>.zo</span></div>
-          {loading && <span className="admin-startup-spinner" aria-hidden="true" />}
-          <h1>{error && !loading ? "Couldn't open the admin console" : "Opening admin console"}</h1>
-          <p>{error && !loading ? error : "Connecting securely and loading your workspace. This can take a moment if the server is starting."}</p>
+        <div
+          className="admin-startup-card"
+          role={error && !loading ? "alert" : "status"}
+        >
+          <div className="login-brand-name">
+            Sakin<span>.zo</span>
+          </div>
+          {loading && (
+            <span className="admin-startup-spinner" aria-hidden="true" />
+          )}
+          <h1>
+            {error && !loading
+              ? "Couldn't open the admin console"
+              : "Opening admin console"}
+          </h1>
+          <p>
+            {error && !loading
+              ? error
+              : "Connecting securely and loading your workspace. This can take a moment if the server is starting."}
+          </p>
           <div className="admin-startup-actions">
-            {error && !loading && <button type="button" className="btn primary" onClick={() => refresh()}>Try again</button>}
-            <button type="button" className="btn secondary" onClick={logout}>Sign out</button>
+            {error && !loading && (
+              <button
+                type="button"
+                className="btn primary"
+                onClick={() => refresh()}
+              >
+                Try again
+              </button>
+            )}
+            <button type="button" className="btn secondary" onClick={logout}>
+              Sign out
+            </button>
           </div>
         </div>
       </main>
@@ -357,6 +382,7 @@ function AdminScreen() {
             <div className="global-search" ref={search}>
               <input
                 id="globalSearch"
+                aria-label="Search admin content"
                 type="search"
                 autoComplete="off"
                 value={query}

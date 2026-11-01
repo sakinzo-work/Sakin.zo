@@ -1,12 +1,19 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import { useAdmin } from "./AdminContext.jsx";
-import { contactDefaults, labels, sortRecords } from "./config.js";
+import {
+  contactDefaults,
+  labels,
+  managerAccess,
+  sortRecords,
+} from "./config.js";
 import { Field, humanLabel } from "./ResourceEditor.jsx";
 import { mediaUrl, safeUrl } from "../../lib/api.js";
 import { uploadMedia } from "./api.js";
 import UploadField from "./UploadField.jsx";
+import ApprovalDetails from "./ApprovalDetails.jsx";
+import BlogImage from "../../components/BlogImage.jsx";
 export function useAction() {
   const [busy, setBusy] = useState(false),
     [error, setError] = useState("");
@@ -24,16 +31,23 @@ export function useAction() {
   return { busy, error, run };
 }
 export function Avatar({ user, className = "profile-avatar" }) {
-  return user.profileImage ? (
+  const [failed, setFailed] = useState(false);
+  useEffect(() => setFailed(false), [user.profileImage]);
+  return user.profileImage && !failed ? (
     <img
       className={className}
       src={mediaUrl(user.profileImage)}
       alt={user.name || ""}
+      onError={() => setFailed(true)}
     />
   ) : (
-    <span className={className}>
+    <span
+      className={`${className} avatar-initials`}
+      aria-label={user.name || "Profile"}
+    >
       {(user.name || "?")
-        .split(" ")
+        .trim()
+        .split(/\s+/)
         .map((value) => value[0])
         .slice(0, 2)
         .join("")
@@ -43,8 +57,16 @@ export function Avatar({ user, className = "profile-avatar" }) {
 }
 export function ConfirmDialog() {
   const { confirmation, setConfirmation } = useAdmin(),
-    [note, setNote] = useState("");
-  useEffect(() => setNote(""), [confirmation]);
+    [note, setNote] = useState(""),
+    dialog = useRef(null);
+  useEffect(() => {
+    setNote("");
+    if (!confirmation) return;
+    const trigger = confirmation.returnFocus;
+    return () => {
+      if (trigger?.isConnected) trigger.focus({ preventScroll: true });
+    };
+  }, [confirmation]);
   if (!confirmation) return null;
   const close = (accepted) => {
     confirmation.resolve(accepted ? { note } : null);
@@ -56,13 +78,31 @@ export function ConfirmDialog() {
       role="alertdialog"
       aria-modal="true"
       aria-labelledby="confirm-title"
+      aria-describedby="confirm-message"
       onKeyDown={(event) => {
         if (event.key === "Escape") close(false);
+        if (event.key === "Tab") {
+          const controls = dialog.current?.querySelectorAll(
+            "button:not(:disabled),textarea:not(:disabled)",
+          );
+          if (!controls?.length) return;
+          const first = controls[0],
+            last = controls[controls.length - 1];
+          if (event.shiftKey && document.activeElement === first) {
+            event.preventDefault();
+            last.focus();
+          } else if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault();
+            first.focus();
+          }
+        }
       }}
     >
-      <div className="modal-card" style={{ maxWidth: 480 }}>
+      <div className="modal-card" style={{ maxWidth: 480 }} ref={dialog}>
         <h2 id="confirm-title">{confirmation.title || "Confirm action"}</h2>
-        <p style={{ margin: "16px 0" }}>{confirmation.message}</p>
+        <p id="confirm-message" style={{ margin: "16px 0" }}>
+          {confirmation.message}
+        </p>
         {confirmation.note && (
           <label className="field">
             Review note
@@ -284,7 +324,7 @@ export function Dashboard() {
     </div>
   );
 }
-export function ResourceList({ type }) {
+export function ResourceList({ type, embedded = false }) {
   const {
       data,
       setData,
@@ -344,12 +384,14 @@ export function ResourceList({ type }) {
   };
   return (
     <>
-      <div className="toolbar">
+      <div className={`toolbar${embedded ? " embedded-toolbar" : ""}`}>
         <div>
-          <h2>{labels[type]}</h2>
+          {embedded ? <h3>{labels[type]}</h3> : <h2>{labels[type]}</h2>}
           <p className="muted">
             {isOwner
-              ? "Add, edit, hide/show and delete records from MongoDB."
+              ? embedded
+                ? "Manage your office locations."
+                : `Manage ${labels[type].toLowerCase()} and control what appears on your website.`
               : "Submit changes for admin approval before anything goes live."}
           </p>
         </div>
@@ -381,7 +423,7 @@ export function ResourceList({ type }) {
           return (
             <article
               key={row._id}
-              className={`card${type === "projects" ? " project-sort-card" : ""}`}
+              className={`card resource-card${type === "projects" ? " project-sort-card" : ""}`}
               draggable={type === "projects" && !action.busy}
               onDragStart={() => setDragged(index)}
               onDragOver={(event) => {
@@ -401,12 +443,22 @@ export function ResourceList({ type }) {
                   {row.visible !== false ? "Visible" : "Hidden"}
                 </span>
               </div>
-              {image && (
-                <img
+              {type === "blogs" ? (
+                <BlogImage
                   className="thumb"
-                  src={mediaUrl(image)}
-                  alt={row.title || row.name || ""}
+                  src={image}
+                  category={row.category}
+                  alt={row.title || "Blog cover"}
+                  loading="lazy"
                 />
+              ) : (
+                image && (
+                  <img
+                    className="thumb"
+                    src={mediaUrl(image)}
+                    alt={row.title || row.name || ""}
+                  />
+                )
               )}
               <h3>
                 {row.title ||
@@ -415,7 +467,7 @@ export function ResourceList({ type }) {
                   row.value ||
                   labels[type]}
               </h3>
-              <p className="muted">
+              <p className="muted resource-description">
                 {row.category ||
                   row.role ||
                   row.desc ||
@@ -442,7 +494,7 @@ export function ResourceList({ type }) {
                   View blog
                 </Link>
               )}
-              <div className="row" style={{ marginTop: 14 }}>
+              <div className="row resource-actions">
                 <button
                   type="button"
                   className="btn secondary"
@@ -588,26 +640,52 @@ export function Employees() {
                 <Avatar user={row} />
                 <div>
                   <h3>{row.name}</h3>
-                  <p className="muted">{row.position || "Employee"}</p>
+                  <p className="muted">
+                    {row.position || humanLabel(row.role || "employee")}
+                  </p>
                 </div>
               </div>
-              <p>{row.employeeId || "—"}</p>
-              <p className="muted">{row.email}</p>
+              <dl className="employee-info">
+                <div>
+                  <dt>Employee ID</dt>
+                  <dd>{row.employeeId || "Not assigned"}</dd>
+                </div>
+                <div>
+                  <dt>Email address</dt>
+                  <dd>{row.email || "Not provided"}</dd>
+                </div>
+              </dl>
               <div className="row">
                 <span className={`pill${row.active !== false ? " on" : ""}`}>
                   {row.active !== false ? "Access allowed" : "Blocked"}
                 </span>
                 <span className="pill">{row.role}</span>
               </div>
-              <div className="access-pills">
-                {(row.permissions || []).map((key) => (
-                  <span key={key} className="pill">
-                    {labels[key] || key}
+              <details className="employee-permissions">
+                <summary>
+                  Section access{" "}
+                  <span>
+                    {managerAccess(row)
+                      ? "Full access"
+                      : `${(row.permissions || []).length} sections`}
                   </span>
-                ))}
-              </div>
+                </summary>
+                <div className="access-pills">
+                  {managerAccess(row) ? (
+                    <p className="muted">
+                      This account can access all admin sections.
+                    </p>
+                  ) : (
+                    (row.permissions || []).map((key) => (
+                      <span key={key} className="pill">
+                        {labels[key] || key}
+                      </span>
+                    ))
+                  )}
+                </div>
+              </details>
               {isManager && (
-                <div className="row">
+                <div className="row resource-actions">
                   <button
                     className="btn secondary"
                     type="button"
@@ -631,7 +709,7 @@ export function Employees() {
                         disabled={action.busy}
                         onClick={() => action.run(() => change(row, true))}
                       >
-                        Kick
+                        Remove
                       </button>
                     </>
                   )}
@@ -648,7 +726,26 @@ export function Employees() {
 export function Approvals() {
   const { data, user, isOwner, isManager, ask, request, refresh, notify } =
       useAdmin(),
-    action = useAction();
+    action = useAction(),
+    [filter, setFilter] = useState("all");
+  const statuses = ["all", "pending", "approved", "rejected"];
+  const counts = Object.fromEntries(
+    statuses.map((status) => [
+      status,
+      data.approvals.filter((row) => status === "all" || row.status === status)
+        .length,
+    ]),
+  );
+  const rows = data.approvals.filter(
+    (row) => filter === "all" || row.status === filter,
+  );
+  const dateLabel = (value) =>
+    value && !Number.isNaN(new Date(value).getTime())
+      ? new Intl.DateTimeFormat("en-IN", {
+          dateStyle: "medium",
+          timeStyle: "short",
+        }).format(new Date(value))
+      : "";
   const review = async (row, decision) => {
     const result = await ask({
       title: decision === "approve" ? "Approve request" : "Reject request",
@@ -669,42 +766,93 @@ export function Approvals() {
         <div>
           <h2>{isManager ? "Approvals" : "My Approvals"}</h2>
           <p className="muted">
-            {data.approvals.filter((row) => row.status === "pending").length}{" "}
-            pending requests
+            Review requested changes and keep track of every decision.
           </p>
         </div>
-        <button
-          className="btn secondary"
-          type="button"
-          onClick={() => refresh()}
-        >
-          Refresh
-        </button>
+      </div>
+      <div className="admin-summary-strip" aria-label="Approval overview">
+        <div>
+          <span>Awaiting review</span>
+          <strong>{counts.pending}</strong>
+        </div>
+        <div>
+          <span>Approved</span>
+          <strong>{counts.approved}</strong>
+        </div>
+        <div>
+          <span>Rejected</span>
+          <strong>{counts.rejected}</strong>
+        </div>
+      </div>
+      <div
+        className="admin-filter-bar"
+        role="group"
+        aria-label="Filter approval requests"
+      >
+        {statuses.map((status) => (
+          <button
+            key={status}
+            type="button"
+            aria-pressed={filter === status}
+            onClick={() => setFilter(status)}
+          >
+            {status === "all" ? "All requests" : humanLabel(status)}
+            <span>{counts[status]}</span>
+          </button>
+        ))}
       </div>
       {action.error && <p role="alert">{action.error}</p>}
       <div className="approval-list">
-        {data.approvals.map((row) => (
+        {rows.map((row) => (
           <article className="card approval-card" key={row._id}>
-            <div className="row" style={{ justifyContent: "space-between" }}>
+            <div className="approval-heading">
               <div>
+                <span className="admin-eyebrow">
+                  {labels[row.resourceType] ||
+                    humanLabel(row.resourceType || "Content")}{" "}
+                  · {humanLabel(row.action || "update")}
+                </span>
                 <h3>{row.title || row.resourceType}</h3>
                 <p className="muted">
-                  {row.requesterName || "Employee"} requested {row.action} on{" "}
-                  {row.resourceType}
+                  Requested by {row.requesterName || "Employee"}
+                  {dateLabel(row.createdAt) && (
+                    <>
+                      {" "}
+                      ·{" "}
+                      <time dateTime={row.createdAt}>
+                        {dateLabel(row.createdAt)}
+                      </time>
+                    </>
+                  )}
                 </p>
               </div>
-              <span className={`pill${row.status === "approved" ? " on" : ""}`}>
-                {row.status}
+              <span className={`pill approval-status status-${row.status}`}>
+                {humanLabel(row.status || "pending")}
               </span>
             </div>
-            <pre className="approval-payload">
-              {JSON.stringify(row.payload || {}, null, 2)}
-            </pre>
-            {row.reviewNote && <p>Note: {row.reviewNote}</p>}
+            <ApprovalDetails row={row} projects={data.projects} />
+            {(row.reviewNote || row.reviewedByName || row.reviewedAt) && (
+              <div className="approval-review">
+                <strong>
+                  {row.reviewedByName
+                    ? `Reviewed by ${row.reviewedByName}`
+                    : "Review note"}
+                </strong>
+                {row.reviewedAt && (
+                  <time dateTime={row.reviewedAt}>
+                    {dateLabel(row.reviewedAt)}
+                  </time>
+                )}
+                {row.reviewNote && <p>{row.reviewNote}</p>}
+              </div>
+            )}
             {isManager &&
               row.status === "pending" &&
               (isOwner || String(row.requester) !== String(user.id)) && (
-                <div className="row">
+                <div className="row approval-actions">
+                  <span className="muted">
+                    Review the changes before making a decision.
+                  </span>
                   <button
                     type="button"
                     className="btn green"
@@ -726,8 +874,19 @@ export function Approvals() {
           </article>
         ))}
       </div>
-      {!data.approvals.length && (
-        <div className="empty">No approval requests yet.</div>
+      {!rows.length && (
+        <div className="empty admin-empty">
+          <strong>
+            {filter === "pending"
+              ? "You're all caught up"
+              : "No requests to show"}
+          </strong>
+          <p>
+            {filter === "all"
+              ? "New approval requests will appear here."
+              : `There are no ${filter} requests.`}
+          </p>
+        </div>
       )}
     </>
   );
@@ -735,6 +894,24 @@ export function Approvals() {
 export function VisibilitySettings({ services = false }) {
   const { data, mutate } = useAdmin(),
     action = useAction();
+  const sectionInfo = {
+    hero: [
+      "Hero banner",
+      "The headline and cover at the top of your homepage.",
+    ],
+    why: ["Why choose us", "Reasons to work with Sakinzo."],
+    clients: ["Our clients", "Logos of the clients you work with."],
+    whatwedo: ["What we do", "An overview of your areas of expertise."],
+    projects: ["Projects", "Featured work and project categories."],
+    services: [
+      "Services",
+      "Your service offering and development capabilities.",
+    ],
+    cases: ["Success stories", "Selected case studies and results."],
+    map: ["Client map", "Locations of your clients on the map."],
+    feedback: ["Testimonials", "Feedback and reviews from your clients."],
+    insights: ["Insights", "Recent articles and updates from your team."],
+  };
   const rows = services
     ? data.whatWeDoServices
     : [
@@ -750,7 +927,8 @@ export function VisibilitySettings({ services = false }) {
         "insights",
       ].map((key) => ({
         key,
-        label: key,
+        label: sectionInfo[key][0],
+        description: sectionInfo[key][1],
         enabled:
           data.sections.find((row) => row.key === key)?.enabled !== false,
       }));
@@ -758,41 +936,66 @@ export function VisibilitySettings({ services = false }) {
     <>
       <div className="toolbar">
         <div>
-          <h2>{services ? "What We Do Services" : "Sections"}</h2>
+          <h2>{services ? "What We Do Services" : "Homepage sections"}</h2>
           <p className="muted">
             Control which content appears on the homepage.
           </p>
         </div>
+        <span className="admin-count">
+          {rows.filter((row) => row.enabled !== false).length} of {rows.length}{" "}
+          visible
+        </span>
       </div>
       {action.error && <p role="alert">{action.error}</p>}
-      <div className="cards">
+      <div className="cards visibility-grid">
         {rows.map((row) => (
-          <article className="card" key={row.key}>
+          <article
+            className={`card visibility-card${row.enabled === false ? " is-hidden" : ""}`}
+            key={row.key}
+          >
+            <div className="visibility-card-top">
+              <span className="admin-section-symbol" aria-hidden="true">
+                {services ? "◇" : "▤"}
+              </span>
+              <button
+                type="button"
+                className="admin-switch"
+                role="switch"
+                aria-checked={row.enabled !== false}
+                aria-label={`Show ${row.label || row.key} on homepage`}
+                disabled={action.busy}
+                onClick={() =>
+                  action.run(() =>
+                    mutate(
+                      services ? "whatWeDoServices" : "sections",
+                      "update",
+                      { enabled: row.enabled === false },
+                      row.key,
+                      row.label || row.key,
+                    ),
+                  )
+                }
+              >
+                <span />
+              </button>
+            </div>
             <h3>{row.label || row.key}</h3>
+            <p className="muted">
+              {row.description ||
+                "Control whether this service appears in What We Do on the homepage."}
+            </p>
             <span className={`pill${row.enabled !== false ? " on" : ""}`}>
               {row.enabled !== false ? "Visible" : "Hidden"}
             </span>
-            <button
-              type="button"
-              className={`btn ${row.enabled !== false ? "danger" : "green"}`}
-              disabled={action.busy}
-              onClick={() =>
-                action.run(() =>
-                  mutate(
-                    services ? "whatWeDoServices" : "sections",
-                    "update",
-                    { enabled: row.enabled === false },
-                    row.key,
-                    row.label || row.key,
-                  ),
-                )
-              }
-            >
-              {row.enabled !== false ? "Turn Off" : "Turn On"}
-            </button>
           </article>
         ))}
       </div>
+      {!rows.length && (
+        <div className="empty admin-empty">
+          <strong>No services available</strong>
+          <p>Your services will appear here when they are available.</p>
+        </div>
+      )}
     </>
   );
 }
@@ -909,7 +1112,7 @@ export function Submissions() {
   );
 }
 export function ContactSettings() {
-  const { data, mutate, setEditing, isOwner } = useAdmin(),
+  const { data, mutate, isOwner } = useAdmin(),
     [values, setValues] = useState(() => ({
       ...contactDefaults,
       ...data.contactPage,
@@ -945,41 +1148,76 @@ export function ContactSettings() {
             );
           }}
         >
-          <h3>Page Content</h3>
-          <div className="grid2">
-            {Object.keys(contactDefaults).map((name) => (
-              <Field
-                key={name}
-                field={{ name, type: "String" }}
-                value={values[name]}
-                onChange={(value) =>
-                  setValues((previous) => ({ ...previous, [name]: value }))
-                }
-              />
-            ))}
-          </div>
+          <h3>Page content</h3>
+          <p className="muted admin-form-intro">
+            Update the words visitors see on your contact page.
+          </p>
+          {[
+            [
+              "Contact form",
+              "The heading and introduction above your enquiry form.",
+              ["formTitle", "formSubtitle"],
+            ],
+            [
+              "Team & sidebar",
+              "Introduce your team and let visitors know when to expect a reply.",
+              ["sidebarLabel", "teamTitle", "teamSubtitle", "teamStatus"],
+            ],
+            [
+              "Contact methods",
+              "Headings, email and social links shown beside the form.",
+              [
+                "officesTitle",
+                "methodsTitle",
+                "email",
+                "emailLabel",
+                "linkedinUrl",
+                "linkedinLabel",
+              ],
+            ],
+            [
+              "Footer invitation",
+              "Encourage visitors to start a conversation.",
+              ["footerCtaTitle", "footerCtaSubtitle", "footerCtaButton"],
+            ],
+          ].map(([title, description, names]) => (
+            <fieldset className="admin-form-group" key={title}>
+              <legend>{title}</legend>
+              <p className="muted">{description}</p>
+              <div className="grid2">
+                {names.map((name) => (
+                  <Field
+                    key={name}
+                    field={{ name, type: "String" }}
+                    value={values[name]}
+                    disabled={action.busy}
+                    onChange={(value) =>
+                      setValues((previous) => ({ ...previous, [name]: value }))
+                    }
+                  />
+                ))}
+              </div>
+            </fieldset>
+          ))}
           {action.error && <p role="alert">{action.error}</p>}
-          <button className="btn primary" disabled={action.busy}>
-            {action.busy
-              ? "Saving…"
-              : isOwner
-                ? "Save Contact Page"
-                : "Send for approval"}
-          </button>
-        </form>
-        <div className="card">
-          <div className="row">
-            <h3>Offices</h3>
-            <button
-              type="button"
-              className="btn primary"
-              onClick={() => setEditing({ type: "contactOffices" })}
-            >
-              + Add Office
+          <div className="admin-form-footer">
+            <button className="btn primary" disabled={action.busy}>
+              {action.busy
+                ? "Saving…"
+                : isOwner
+                  ? "Save Contact Page"
+                  : "Send for approval"}
             </button>
+            <span className="muted">
+              {isOwner
+                ? "Changes appear on your website after saving."
+                : "Your changes will be reviewed before publishing."}
+            </span>
           </div>
-          <ResourceList type="contactOffices" />
-        </div>
+        </form>
+        <aside className="card contact-offices-panel">
+          <ResourceList type="contactOffices" embedded />
+        </aside>
       </div>
       <div className="contact-leads-panel">
         <Submissions />
@@ -1022,30 +1260,82 @@ export function Profile() {
   return (
     <>
       <div className="toolbar">
-        <h2>Profile</h2>
+        <div>
+          <h2>My profile</h2>
+          <p className="muted">
+            Keep your account details and profile picture up to date.
+          </p>
+        </div>
       </div>
       <div className="profile-grid">
         <div className="card profile-card">
           <Avatar user={{ ...user, ...values }} />
-          <h3>{user.name}</h3>
-          <p>{user.position || "Employee"}</p>
-          <span className="pill">{user.role}</span>
-          <p>{user.email}</p>
-          <p>{user.employeeId}</p>
+          <h3>{values.name || user.name}</h3>
+          <p className="muted">{user.position || "Sakinzo team"}</p>
+          <span className="pill on">{humanLabel(user.role || "employee")}</span>
+          <dl className="employee-info">
+            <div>
+              <dt>Email address</dt>
+              <dd>{user.email}</dd>
+            </div>
+            <div>
+              <dt>Employee ID</dt>
+              <dd>{user.employeeId || "Not assigned"}</dd>
+            </div>
+          </dl>
         </div>
         <form className="card profile-form" id="profileForm" onSubmit={submit}>
-          <h3>Edit Profile</h3>
-          {Object.keys(values).map((name) => (
-            <Field
-              key={name}
-              field={{ name, type: "String" }}
-              value={values[name]}
-              required={["name", "email"].includes(name)}
-              onChange={(value) =>
-                setValues((previous) => ({ ...previous, [name]: value }))
-              }
-            />
-          ))}
+          <h3>Personal details</h3>
+          <p className="muted admin-form-intro">
+            Your team uses these details to recognise and reach you.
+          </p>
+          <div className="grid2">
+            {["name", "email", "phone", "bio"].map((name) => (
+              <Field
+                key={name}
+                field={{ name, type: "String" }}
+                value={values[name]}
+                required={["name", "email"].includes(name)}
+                disabled={action.busy}
+                onChange={(value) =>
+                  setValues((previous) => ({ ...previous, [name]: value }))
+                }
+              />
+            ))}
+          </div>
+          <fieldset className="admin-form-group">
+            <legend>Profile picture</legend>
+            <p className="muted">
+              Choose a clear photo so your team can recognise you.
+            </p>
+            <div className="profile-picture-preview">
+              <Avatar user={{ ...user, ...values }} />
+              <div>
+                <strong>
+                  {values.profileImage
+                    ? "Current picture"
+                    : "Using your initials"}
+                </strong>
+                <p className="muted">
+                  Your picture is saved with your profile.
+                </p>
+                {values.profileImage && (
+                  <button
+                    type="button"
+                    className="btn secondary"
+                    disabled={action.busy}
+                    onClick={() =>
+                      setValues((previous) => ({
+                        ...previous,
+                        profileImage: "",
+                      }))
+                    }
+                  >
+                    Remove picture
+                  </button>
+                )}
+              </div>
+            </div>
             <UploadField
               id="upload-profile-picture"
               label="Upload profile picture"
@@ -1065,14 +1355,49 @@ export function Profile() {
                   });
               }}
             />
+            <details className="profile-image-link">
+              <summary>Use an image URL</summary>
+              <label className="field" htmlFor="profile-picture-url">
+                <span>Image URL</span>
+                <input
+                  id="profile-picture-url"
+                  inputMode="url"
+                  disabled={action.busy}
+                  value={
+                    values.profileImage.startsWith("data:")
+                      ? ""
+                      : values.profileImage
+                  }
+                  placeholder={
+                    values.profileImage.startsWith("data:")
+                      ? "A picture is already uploaded. Paste a URL to replace it."
+                      : "https://example.com/photo.jpg"
+                  }
+                  onChange={(event) =>
+                    setValues((previous) => ({
+                      ...previous,
+                      profileImage: event.target.value,
+                    }))
+                  }
+                />
+              </label>
+            </details>
+          </fieldset>
           {action.error && <p role="alert">{action.error}</p>}
-          <button className="btn primary" disabled={action.busy}>
-            {action.busy
-              ? "Saving…"
-              : isOwner
-                ? "Save profile"
-                : "Send for approval"}
-          </button>
+          <div className="admin-form-footer">
+            <button className="btn primary" disabled={action.busy}>
+              {action.busy
+                ? "Saving…"
+                : isOwner
+                  ? "Save profile"
+                  : "Send for approval"}
+            </button>
+            <span className="muted">
+              {isOwner
+                ? "Only saved changes update your account."
+                : "Profile changes need approval before they appear."}
+            </span>
+          </div>
         </form>
       </div>
     </>

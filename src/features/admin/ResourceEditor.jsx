@@ -40,6 +40,9 @@ const textareas = new Set([
   "address",
   "notes",
   "images",
+  "formSubtitle",
+  "teamSubtitle",
+  "footerCtaSubtitle",
 ]);
 const mediaFields = {
   projects: ["img", "modelImage"],
@@ -247,7 +250,10 @@ function Editor({ type, item = {} }) {
       setError(failure.message);
     } finally {
       setUploading(false);
-      setFileKeys(previous => ({ ...previous, gallery: (previous.gallery || 0) + 1 }));
+      setFileKeys((previous) => ({
+        ...previous,
+        gallery: (previous.gallery || 0) + 1,
+      }));
     }
   };
   const submit = async (event) => {
@@ -349,7 +355,19 @@ function Editor({ type, item = {} }) {
                 const name = field.name;
                 let options = field.options;
                 if (type === "projects" && name === "category")
-                  options = [...new Set([...projectCategories, ...(data.projects || []).map(project => project.category), item.category].filter(value => typeof value === "string" && value.trim()))];
+                  options = [
+                    ...new Set(
+                      [
+                        ...projectCategories,
+                        ...(data.projects || []).map(
+                          (project) => project.category,
+                        ),
+                        item.category,
+                      ].filter(
+                        (value) => typeof value === "string" && value.trim(),
+                      ),
+                    ),
+                  ];
                 if (name === "role" && !isOwner)
                   options = (options || []).filter(
                     (role) => role !== "owner" || item.role === "owner",
@@ -380,7 +398,9 @@ function Editor({ type, item = {} }) {
                       value={values[name]}
                       onChange={(value) => update(name, value)}
                       required={required}
-                      disabled={saving || (name === "videoUrl" && Boolean(video))}
+                      disabled={
+                        saving || (name === "videoUrl" && Boolean(video))
+                      }
                       type={
                         name === "password"
                           ? showPassword
@@ -411,24 +431,28 @@ function Editor({ type, item = {} }) {
                     {mediaFields[type]?.includes(name) && (
                       <>
                         <UploadField
-                            key={fileKeys[name] || 0}
-                            label={name === "modelImage" ? "Upload model photo" : "Upload image"}
-                            hint="Choose an image. Uploads when you save."
-                            id={
-                              name === "img"
-                                ? "upload-projects"
-                                : `upload-${type}-${name}`
-                            }
-                            accept="image/*"
-                            disabled={saving}
-                            onChange={(event) => {
-                              const file = event.target.files[0] || null;
-                              setUploads((previous) => ({
-                                ...previous,
-                                [name]: file,
-                              }));
-                            }}
-                          />
+                          key={fileKeys[name] || 0}
+                          label={
+                            name === "modelImage"
+                              ? "Upload model photo"
+                              : "Upload image"
+                          }
+                          hint="Choose an image. Uploads when you save."
+                          id={
+                            name === "img"
+                              ? "upload-projects"
+                              : `upload-${type}-${name}`
+                          }
+                          accept="image/*"
+                          disabled={saving}
+                          onChange={(event) => {
+                            const file = event.target.files[0] || null;
+                            setUploads((previous) => ({
+                              ...previous,
+                              [name]: file,
+                            }));
+                          }}
+                        />
                         {values[name] && (
                           <img
                             className="thumb"
@@ -439,17 +463,17 @@ function Editor({ type, item = {} }) {
                       </>
                     )}
                     {name === "images" && (
-                        <UploadField
-                          key={fileKeys.gallery || 0}
-                          label="Upload gallery images"
-                          hint="Select one or more images to add to the gallery."
-                          id="projectGalleryUpload"
-                          multiple
-                          accept="image/*"
-                          disabled={uploading || saving}
-                          busy={uploading}
-                          onChange={(event) => gallery(event.target.files)}
-                        />
+                      <UploadField
+                        key={fileKeys.gallery || 0}
+                        label="Upload gallery images"
+                        hint="Select one or more images to add to the gallery."
+                        id="projectGalleryUpload"
+                        multiple
+                        accept="image/*"
+                        disabled={uploading || saving}
+                        busy={uploading}
+                        onChange={(event) => gallery(event.target.files)}
+                      />
                     )}
                   </div>
                 );
@@ -461,15 +485,15 @@ function Editor({ type, item = {} }) {
               <div className="form-section-title">
                 <span>02</span>Project video
               </div>
-                <UploadField
-                  key={fileKeys.video || 0}
-                  label="Upload video from device"
-                  hint="MP4, WebM or Ogg, up to 50 MB. Uploads when you save."
-                  id="upload-project-video"
-                  accept="video/mp4,video/webm,video/ogg,.mp4,.webm,.ogv"
-                  onChange={(event) => selectVideo(event.target.files[0])}
-                  disabled={saving}
-                />
+              <UploadField
+                key={fileKeys.video || 0}
+                label="Upload video from device"
+                hint="MP4, WebM or Ogg, up to 50 MB. Uploads when you save."
+                id="upload-project-video"
+                accept="video/mp4,video/webm,video/ogg,.mp4,.webm,.ogv"
+                onChange={(event) => selectVideo(event.target.files[0])}
+                disabled={saving}
+              />
               <div className="row admin-video-status">
                 <span id="projectVideoStatus" role="status">
                   {video

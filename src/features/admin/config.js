@@ -121,7 +121,7 @@ export const contactDefaults = {
   teamStatus: "Team is online · Responds in < 24 h",
   officesTitle: "Our Offices",
   methodsTitle: "Other Ways to Reach Us",
-  email: "hello@sakinzo.com",
+  email: "sakinzo.work@gmail.com",
   emailLabel: "Email us directly",
   linkedinUrl: "https://www.linkedin.com/company/sakinzo",
   linkedinLabel: "Connect on LinkedIn",

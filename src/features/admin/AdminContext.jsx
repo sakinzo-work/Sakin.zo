@@ -41,7 +41,7 @@ export function AdminProvider({ children }) {
   const { refresh: refreshPublic } = useSiteData();
   const [confirmation, setConfirmation] = useState(null);
   const ask = (options) =>
-    new Promise((resolve) => setConfirmation({ ...options, resolve }));
+    new Promise((resolve) => setConfirmation({ ...options, resolve, returnFocus: document.activeElement }));
   const generation = useRef(0),
     syncRequest = useRef(null),
     hasSynced = useRef(false),
