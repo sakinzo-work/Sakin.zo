@@ -2,7 +2,7 @@ import RouteLink from "./AppLink.jsx";
 import { T } from "../context/LanguageContext.jsx";
 import Localized from "./Localized.jsx";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { Logo } from "./SiteHeader.jsx";
+import SiteHeader from "./SiteHeader.jsx";
 import PageHero from "./PageHero.jsx";
 import Markdown from "./Markdown.jsx";
 import useRemoteData from "../hooks/useRemoteData.js";
@@ -19,7 +19,6 @@ import {
 } from "../lib/project.js";
 import covers from "../data/page-covers.js";
 import { useParams, useSearchParams } from "react-router-dom";
-import LanguagePicker from "./LanguagePicker.jsx";
 import SiteFooter from "./SiteFooter.jsx";
 function Gallery({ images, title }) {
   const [slide, setSlide] = useState(0);
@@ -486,15 +485,12 @@ export default function ProjectPage() {
   const missing = selection.ready && !selection.id;
   return (
     <>
-      <header className="hdr">
-        <div className="wrap nav">
-          <Logo />
-          <LanguagePicker />
-          <RouteLink className="back" href="/#sec-projects">
-            <T>{" \u2190 All projects "}</T>
-          </RouteLink>
-        </div>
-      </header>
+      <SiteHeader />
+      <div className="project-back-wrap">
+        <RouteLink className="project-back" href="/#sec-projects">
+          <T>{" \u2190 All projects "}</T>
+        </RouteLink>
+      </div>
       <main id="app">
         {data && (loading || error) && <div className="wrap remote-refresh-note"><ContentState compact state={error ? "error" : "loading"}
           title={error ? "Showing saved project details" : "Updating project details…"} description="You can keep exploring while we check for the latest updates."

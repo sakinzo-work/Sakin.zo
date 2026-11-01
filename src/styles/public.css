@@ -11,6 +11,9 @@ body:not([data-page]) .route-loading .content-state-action { min-height: 44px; p
 .blog-image-fallback svg { width: 56px; height: 56px; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
 .blog-article-state { box-sizing: border-box; width: 100%; max-width: 900px; margin: 0 auto; padding: 120px 24px 80px; }
 .blog-back-link { display: block; width: fit-content; margin: 24px auto 0; color: #1673ff; font: 600 14px/1.6 Inter, Arial, sans-serif; text-decoration: none; }
+.project-back-wrap { box-sizing: border-box; width: min(1180px, calc(100% - 48px)); margin: 18px auto 0; }
+.project-back { display: inline-flex; align-items: center; min-height: 36px; color: #1673ff; font: 600 13px/1.5 Inter, Arial, sans-serif; text-decoration: none; }
+.project-back:hover { color: #0d55c2; text-decoration: underline; text-underline-offset: 3px; }
 body[data-page="index"] .svc-heading { margin: 0; }
 body[data-page="index"] .svc-item { cursor: default; }
 body[data-page="index"] button.svc-head { width: 100%; border: 0; background: transparent; color: inherit; font: inherit; text-align: start; cursor: pointer; }
