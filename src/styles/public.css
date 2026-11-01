@@ -6,7 +6,7 @@
 /* The recovery screen also works if a route failed before assigning a body page. */
 body:not([data-page]) .route-loading .content-state { display: flex; flex-direction: column; align-items: center; gap: 20px; padding: 40px 24px; border: 1px solid #dfe8f4; border-radius: 20px; background: #fff; text-align: center; }
 body:not([data-page]) .route-loading .content-state-action { min-height: 44px; padding: 11px 22px; border: 0; border-radius: 100px; background: #1673ff; color: #fff; font: 700 14px Inter, Arial, sans-serif; }
-.remote-refresh-note { padding-top: 96px; margin-bottom: -48px; }
+.remote-refresh-note { padding-top: 24px; }
 body[data-page] { --site-header-height: 68px; }
 body[data-page] :is(section[id], main[id], footer[id]) { scroll-margin-top: calc(var(--site-header-height) + 24px); }
 body[data-page] :is(button, a, input, textarea):focus-visible { outline: 3px solid #68a8ff; outline-offset: 4px; }
@@ -54,9 +54,9 @@ body[data-page] .content-state--compact .content-state-action { flex: none; marg
 @media (max-width: 600px) {
   body[data-page] .content-state { padding: 32px 20px; border-radius: 16px; }
   body[data-page] .content-state-copy :is(h1,h2,h3) { font-size: 18px; }
-  body[data-page] .content-state--compact { flex-wrap: wrap; justify-content: flex-start; gap: 12px; padding: 18px; }
-  body[data-page] .content-state--compact .content-state-copy { flex: 1; }
-  body[data-page] .content-state--compact .content-state-action { margin-inline-start: 54px; }
+  body[data-page] .content-state--compact { display: grid; grid-template-columns: 42px minmax(0, 1fr); align-items: start; gap: 12px; padding: 18px; }
+  body[data-page] .content-state--compact .content-state-copy { grid-column: 2; }
+  body[data-page] .content-state--compact .content-state-action { grid-column: 2; justify-self: start; margin-inline-start: 0; }
 }
 @media (prefers-reduced-motion: reduce) { .content-spinner, .is-spinning, .project-skeleton-media { animation: none; } }
 

@@ -1007,6 +1007,17 @@ await test("saved public articles and project details remain usable through slow
     for (const width of [1440, 390]) {
       await page.setViewportSize({ width, height: 900 });
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+      const notice = page.locator(".remote-refresh-note .content-state");
+      const copy = await notice.locator(".content-state-copy").boundingBox();
+      const button = await notice.locator("button").boundingBox();
+      const hero = await page.locator('[data-hero-page="project"]').boundingBox();
+      const panel = await notice.boundingBox();
+      assert.ok(hero.y >= panel.y + panel.height, "Saved-data notice must not overlap the project hero");
+      if (width === 390) {
+        assert.ok(copy.width >= 200, "The saved-data message needs readable text width");
+        assert.ok(button.y >= copy.y + copy.height, "Retry belongs below the message on mobile");
+      }
+      await page.screenshot({ path: path.join(root, `test-results/saved-project-recovery-${width}.png`) });
     }
     mode = "missing";
     await page.getByRole("button", { name: "Try again", exact: true }).click();
