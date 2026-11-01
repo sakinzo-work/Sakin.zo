@@ -158,6 +158,7 @@
     "/i18n.css"
   ],
   "project": [
+    "/subpage.css",
     "/styles/project.css",
     "/page-heroes.css",
     "/site-ui.css",
