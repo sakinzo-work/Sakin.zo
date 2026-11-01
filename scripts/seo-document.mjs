@@ -93,7 +93,9 @@ export function seoDocument(shell, seo) {
   const withHead = /<!--seo:start-->[\s\S]*?<!--seo:end-->/.test(shell)
     ? shell.replace(/<!--seo:start-->[\s\S]*?<!--seo:end-->/, () => block)
     : shell.replace("</head>", () => block + "\n</head>");
-  const title = String(seo.title || "Sakin.zo").replace(/\s*[|–-]\s*Sakin\.zo\s*$/i, "");
+  const title = String(seo.title || "Sakin.zo")
+    .replace(/^Sakin\.zo\s*[|–-]\s*/i, "")
+    .replace(/\s*[|–-]\s*Sakin\.zo(?:\s+Blog)?\s*$/i, "");
   const fallback = `<main class="seo-prerender-fallback" style="max-width:760px;margin:12vh auto;padding:24px;font:16px/1.7 Inter,Arial,sans-serif;color:#13233f"><h1 style="margin:0 0 12px;font-size:clamp(28px,5vw,44px);line-height:1.15">${escapeHtml(title)}</h1><p style="margin:0;color:#52647d">${escapeHtml(seo.description || "Digital product development by Sakin.zo.")}</p></main>`;
   return withHead.replace(/(<div\s+id="root"\s*>)(\s*)(<\/div>)/i, (_match, open, _empty, close) => `${open}${fallback}${close}`);
 }
