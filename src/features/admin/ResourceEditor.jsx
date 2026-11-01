@@ -5,7 +5,8 @@ import schema from "./schema.json";
 import { labels, normalizeRecord, permissionKeys } from "./config.js";
 import { uploadMedia, validateVideo } from "./api.js";
 import { mediaUrl } from "../../lib/api.js";
-import { cleanList } from "../../lib/project.js";
+import { cleanList, projectCategories } from "../../lib/project.js";
+import UploadField from "./UploadField.jsx";
 export const fieldLabels = {
   img: "Cover image URL",
   images: "Gallery image URLs",
@@ -92,6 +93,7 @@ export function Field({
       {children ||
         (field.type === "Boolean" ? (
           <select
+            {...props}
             id={id}
             name={field.name}
             value={String(value !== false && value !== "false")}
@@ -106,6 +108,7 @@ export function Field({
           </select>
         ) : field.options?.length ? (
           <select
+            {...props}
             id={id}
             name={field.name}
             value={value}
@@ -121,6 +124,7 @@ export function Field({
           </select>
         ) : textareas.has(field.name) ? (
           <textarea
+            disabled={props.disabled}
             id={id}
             name={field.name}
             value={value ?? ""}
@@ -196,7 +200,7 @@ function Editor({ type, item = {} }) {
       if (event.key === "Escape" && !saving) setEditing(null);
       if (event.key === "Tab") {
         const elements = panel.current?.querySelectorAll(
-          "button:not(:disabled),input:not(:disabled),select,textarea,a[href]",
+          "button:not(:disabled),input:not(:disabled),select:not(:disabled),textarea:not(:disabled),a[href]",
         );
         if (!elements?.length) return;
         const first = elements[0],
@@ -243,6 +247,7 @@ function Editor({ type, item = {} }) {
       setError(failure.message);
     } finally {
       setUploading(false);
+      setFileKeys(previous => ({ ...previous, gallery: (previous.gallery || 0) + 1 }));
     }
   };
   const submit = async (event) => {
@@ -343,6 +348,8 @@ function Editor({ type, item = {} }) {
               {fields.map((field) => {
                 const name = field.name;
                 let options = field.options;
+                if (type === "projects" && name === "category")
+                  options = [...new Set([...projectCategories, ...(data.projects || []).map(project => project.category), item.category].filter(value => typeof value === "string" && value.trim()))];
                 if (name === "role" && !isOwner)
                   options = (options || []).filter(
                     (role) => role !== "owner" || item.role === "owner",
@@ -373,7 +380,7 @@ function Editor({ type, item = {} }) {
                       value={values[name]}
                       onChange={(value) => update(name, value)}
                       required={required}
-                      disabled={name === "videoUrl" && Boolean(video)}
+                      disabled={saving || (name === "videoUrl" && Boolean(video))}
                       type={
                         name === "password"
                           ? showPassword
@@ -403,26 +410,25 @@ function Editor({ type, item = {} }) {
                     {help && <small className="field-help">{help}</small>}
                     {mediaFields[type]?.includes(name) && (
                       <>
-                        <label className="upload-label">
-                          Upload{" "}
-                          {name === "modelImage" ? "model photo" : "image"}
-                          <input
+                        <UploadField
                             key={fileKeys[name] || 0}
-                            type="file"
+                            label={name === "modelImage" ? "Upload model photo" : "Upload image"}
+                            hint="Choose an image. Uploads when you save."
                             id={
                               name === "img"
                                 ? "upload-projects"
                                 : `upload-${type}-${name}`
                             }
                             accept="image/*"
-                            onChange={(event) =>
+                            disabled={saving}
+                            onChange={(event) => {
+                              const file = event.target.files[0] || null;
                               setUploads((previous) => ({
                                 ...previous,
-                                [name]: event.target.files[0] || null,
-                              }))
-                            }
+                                [name]: file,
+                              }));
+                            }}
                           />
-                        </label>
                         {values[name] && (
                           <img
                             className="thumb"
@@ -433,17 +439,17 @@ function Editor({ type, item = {} }) {
                       </>
                     )}
                     {name === "images" && (
-                      <label className="upload-label">
-                        Upload gallery images
-                        <input
-                          type="file"
+                        <UploadField
+                          key={fileKeys.gallery || 0}
+                          label="Upload gallery images"
+                          hint="Select one or more images to add to the gallery."
                           id="projectGalleryUpload"
                           multiple
                           accept="image/*"
-                          disabled={uploading}
+                          disabled={uploading || saving}
+                          busy={uploading}
                           onChange={(event) => gallery(event.target.files)}
                         />
-                      </label>
                     )}
                   </div>
                 );
@@ -455,22 +461,16 @@ function Editor({ type, item = {} }) {
               <div className="form-section-title">
                 <span>02</span>Project video
               </div>
-              <div className="field">
-                <label htmlFor="upload-project-video">
-                  Upload video from device
-                </label>
-                <input
+                <UploadField
                   key={fileKeys.video || 0}
-                  type="file"
+                  label="Upload video from device"
+                  hint="MP4, WebM or Ogg, up to 50 MB. Uploads when you save."
                   id="upload-project-video"
                   accept="video/mp4,video/webm,video/ogg,.mp4,.webm,.ogv"
                   onChange={(event) => selectVideo(event.target.files[0])}
+                  disabled={saving}
                 />
-                <small className="field-help">
-                  MP4, WebM or Ogg, up to 50 MB. Uploads when you save.
-                </small>
-              </div>
-              <div className="row">
+              <div className="row admin-video-status">
                 <span id="projectVideoStatus" role="status">
                   {video
                     ? `${video.name} selected. Uploads when you save.`
@@ -481,6 +481,7 @@ function Editor({ type, item = {} }) {
                 <button
                   type="button"
                   className="btn secondary"
+                  disabled={saving || (!video && !values.videoUrl)}
                   onClick={() => {
                     update("videoUrl", "");
                     setVideo(null);

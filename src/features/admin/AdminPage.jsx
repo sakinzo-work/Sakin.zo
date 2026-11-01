@@ -199,11 +199,20 @@ function AdminScreen() {
     }
   }, [user?.id, params.section]);
   if (!token) return <Login />;
-  if (!user || (loading && !synced))
+  if (!user || !synced)
     return (
-      <div className="state" role="status">
-        Loading admin console…
-      </div>
+      <main className="admin-startup">
+        <div className="admin-startup-card" role={error && !loading ? "alert" : "status"}>
+          <div className="login-brand-name">Sakin<span>.zo</span></div>
+          {loading && <span className="admin-startup-spinner" aria-hidden="true" />}
+          <h1>{error && !loading ? "Couldn't open the admin console" : "Opening admin console"}</h1>
+          <p>{error && !loading ? error : "Connecting securely and loading your workspace. This can take a moment if the server is starting."}</p>
+          <div className="admin-startup-actions">
+            {error && !loading && <button type="button" className="btn primary" onClick={() => refresh()}>Try again</button>}
+            <button type="button" className="btn secondary" onClick={logout}>Sign out</button>
+          </div>
+        </div>
+      </main>
     );
   const groups = navGroups
     .map(([label, keys]) => [label, keys.filter(canView)])

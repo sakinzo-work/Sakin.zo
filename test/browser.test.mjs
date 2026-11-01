@@ -137,7 +137,7 @@ async function setup() {
 }
 await setup();
 
-async function session({ translation = false, employee = false, brokenCover = false, mapLocations = [], projectCount = 1 } = {}) {
+async function session({ translation = false, employee = false, brokenCover = false, mapLocations = [], projectCount = 1, projectCategory = project.category } = {}) {
   const identity = employee
     ? {
         ...admin,
@@ -159,6 +159,7 @@ async function session({ translation = false, employee = false, brokenCover = fa
     errors = [],
     requests = [];
   let projects = [structuredClone(project)];
+  projects[0].category = projectCategory;
   for (let index = 1; index < projectCount; index++)
     projects.push({ ...structuredClone(project), _id: `project-fixture-${index}`, title: `Connected app ${index + 1}` });
   if (brokenCover) projects[0].img = "assets/missing-project-cover.png";
@@ -1213,6 +1214,138 @@ await test("homepage service illustrations, panels and plus/minus controls stay 
     await page.getByRole("heading", { name: services.find(service => service.slug === "devops-solutions").headline, exact: true }).waitFor();
     assert.deepEqual(errors, []);
   } finally { await close(); }
+});
+
+await test("admin startup avoids overlapping syncs and recovers from failed, stalled and expired sessions", async () => {
+  const { page, open, errors, close } = await session();
+  await page.clock.install();
+  await page.addInitScript(() => sessionStorage.setItem("sakinzo_admin_token", "mock-admin-session"));
+  let mode = "hold-projects", releaseProjects, releaseAuth, authCalls = 0;
+  const projectGate = new Promise(resolve => { releaseProjects = resolve; });
+  const authGate = new Promise(resolve => { releaseAuth = resolve; });
+  await page.route("**/api/auth/me", async route => {
+    authCalls++;
+    if (mode === "stall-auth") await authGate;
+    await route.fulfill(mode === "expired" ? { status: 401, json: { message: "Session expired" } } : { json: { admin } }).catch(() => {});
+  });
+  await page.route("**/api/projects/admin/all", async route => {
+    if (mode === "hold-projects") await projectGate;
+    await route.fulfill(mode === "fail-projects" ? { status: 503, json: { message: "Fixture server unavailable" } } : { json: [project] }).catch(() => {});
+  });
+  try {
+    await open("/admin");
+    await page.getByRole("heading", { name: "Opening admin console", exact: true }).waitFor();
+    await page.clock.fastForward(16000);
+    assert.equal(authCalls, 1, "The polling interval must not restart a pending initial sync");
+    mode = "success"; releaseProjects();
+    await page.locator(".layout#app").waitFor();
+    mode = "fail-projects";
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.getByRole("heading", { name: "Couldn't open the admin console", exact: true }).waitFor();
+    assert.equal(await page.locator(".layout#app").count(), 0);
+    for (const width of [1440, 390]) {
+      await page.setViewportSize({ width, height: 900 });
+      const retry = page.getByRole("button", { name: "Try again", exact: true });
+      assert.ok((await retry.boundingBox()).height >= 44);
+      assert.ok(await retry.isEnabled());
+      assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+      await page.screenshot({ path: path.join(root, `test-results/admin-startup-recovery-${width}.png`) });
+    }
+    mode = "success";
+    await page.getByRole("button", { name: "Try again", exact: true }).click();
+    await page.locator(".layout#app").waitFor();
+    mode = "stall-auth";
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.getByRole("heading", { name: "Opening admin console", exact: true }).waitFor();
+    await page.clock.fastForward(31000);
+    await page.getByRole("heading", { name: "Couldn't open the admin console", exact: true }).waitFor();
+    assert.ok((await page.locator(".admin-startup-card").textContent()).includes("taking too long"));
+    mode = "expired"; releaseAuth();
+    await page.getByRole("button", { name: "Try again", exact: true }).click();
+    await page.locator("#loginForm").waitFor();
+    assert.equal(await page.evaluate(() => sessionStorage.getItem("sakinzo_admin_token")), null);
+    assert.deepEqual(errors, []);
+  } finally { releaseProjects(); releaseAuth(); await close(); }
+});
+
+await test("admin Game category dropdown and styled image, gallery and video controls save correctly", async () => {
+  const { page, open, requests, errors, close } = await session({ projectCategory: "Legacy category" });
+  let imageUploads = 0, releaseVideo;
+  const videoGate = new Promise(resolve => { releaseVideo = resolve; });
+  await page.route("**/api/upload", route => route.fulfill({ json: { url: `/uploads/editor-image-${++imageUploads}.png` } }));
+  await page.route("**/api/upload/videos", async route => { await videoGate; await route.fulfill({ json: { url: "/api/upload/videos/game-video" } }).catch(() => {}); });
+  const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jPZkAAAAASUVORK5CYII=", "base64");
+  try {
+    await open("/admin");
+    await page.locator('#loginForm [name="email"]').fill("owner@example.test");
+    await page.locator("#loginPassword").fill("fixture-password");
+    await page.locator("#loginButton").click();
+    await page.locator(".layout#app").waitFor();
+    await page.locator('#nav [data-page="projects"]').click();
+    await page.getByRole("button", { name: "Edit", exact: true }).first().click();
+    const category = page.locator('#modalForm select[name="category"]');
+    assert.equal(await category.inputValue(), "Legacy category");
+    assert.equal(await page.locator('#modalForm input[name="category"]').count(), 0);
+    assert.ok(await category.locator('option[value="Game Development"]').count());
+    await category.selectOption("Game Development");
+    for (const width of [1440, 390, 320]) {
+      await page.setViewportSize({ width, height: 900 });
+      for (const theme of ["dark", "light"]) {
+        await page.evaluate(value => { document.documentElement.dataset.theme = value; }, theme);
+        const metrics = await page.locator(".modal-card").evaluate(element => ({ width: innerWidth, left: element.getBoundingClientRect().left,
+          right: element.getBoundingClientRect().right, scroll: element.scrollWidth, client: element.clientWidth }));
+        assert.ok(metrics.left >= -1 && metrics.right <= metrics.width + 1);
+        assert.ok(metrics.scroll <= metrics.client + 1, `${width}/${theme}: editor overflows`);
+        for (const input of await page.locator('#modal input[type="file"]').all()) {
+          assert.equal(await input.evaluate(element => getComputedStyle(element).opacity), "0");
+          assert.ok((await input.locator("..").boundingBox()).height >= 44);
+        }
+        await page.locator("#upload-projects").scrollIntoViewIfNeeded();
+        await page.screenshot({ path: path.join(root, `test-results/admin-media-${width}-${theme}.png`) });
+      }
+    }
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    const remove = page.getByRole("button", { name: "Remove video", exact: true });
+    await remove.click();
+    assert.ok(await remove.isDisabled());
+    await page.locator("#upload-project-video").setInputFiles({ name: "wrong.txt", mimeType: "text/plain", buffer: Buffer.from("invalid") });
+    await page.getByRole("alert").filter({ hasText: "Choose an MP4" }).waitFor();
+    assert.ok(await remove.isDisabled());
+    await page.locator("#upload-project-video").setInputFiles({ name: "game-demo.mp4", mimeType: "video/mp4", buffer: Buffer.from("fixture video") });
+    assert.ok(await remove.isEnabled());
+    assert.ok((await page.locator("#projectVideoStatus").textContent()).includes("game-demo.mp4"));
+    await page.locator("#upload-projects").setInputFiles({ name: "game-cover.png", mimeType: "image/png", buffer: png });
+    assert.ok((await page.locator("#upload-projects-selection").textContent()).includes("game-cover.png"));
+    await page.locator("#projectGalleryUpload").setInputFiles([
+      { name: "game-1.png", mimeType: "image/png", buffer: png },
+      { name: "game-2.png", mimeType: "image/png", buffer: png },
+    ]);
+    await page.waitForFunction(() => document.querySelector('[name="images"]').value.includes("editor-image-2.png"));
+    await page.locator('#modalForm button[type="submit"]').click();
+    await page.getByRole("button", { name: "Saving…", exact: true }).waitFor();
+    assert.ok(await category.isDisabled());
+    assert.ok(await page.locator("#upload-project-video").isDisabled());
+    releaseVideo();
+    await page.locator("#modal").waitFor({ state: "hidden" });
+    const saved = requests.find(request => request.path === "/api/projects/project-fixture" && request.method === "PUT");
+    assert.ok(saved);
+    const payload = JSON.parse(saved.body);
+    assert.equal(payload.category, "Game Development");
+    assert.ok(payload.img.startsWith("/uploads/editor-image-"));
+    assert.equal(payload.images.length, 3);
+    assert.ok(payload.images.includes(project.images[0]));
+    assert.equal(payload.images.filter(image => image.startsWith("/uploads/editor-image-")).length, 2);
+    assert.ok(payload.videoUrl.endsWith("/api/upload/videos/game-video"));
+    await page.getByRole("button", { name: "+ Add Projects", exact: true }).click();
+    assert.equal(await page.locator('#modal select[name="category"]').inputValue(), "");
+    await page.locator('#modal select[name="category"]').selectOption("Game Development");
+    await page.getByRole("button", { name: "Cancel", exact: true }).click();
+    await open("/");
+    await page.locator("#main-projects-grid .project-card").first().waitFor();
+    await page.locator(".project-filter").filter({ hasText: /^Game Development$/i }).click();
+    assert.equal(await page.locator("#main-projects-grid .project-card").count(), 1);
+    assert.deepEqual(errors, []);
+  } finally { releaseVideo(); await close(); }
 });
 
 await browser.close();

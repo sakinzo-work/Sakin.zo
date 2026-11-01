@@ -1,5 +1,5 @@
 {
-  "admin": ["/styles/admin.css"],
+  "admin": ["/styles/admin.css", "/admin-controls.css"],
   "ai-agent-development": [
     "/subpage.css",
     "/services.css",

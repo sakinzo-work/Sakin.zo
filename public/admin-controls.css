@@ -1,0 +1,98 @@
+body[data-page="admin"] {
+  --admin-control-bg: #111722;
+  --admin-control-border: #303c51;
+  --admin-control-text: #e2e8f0;
+  --admin-control-muted: #9cabc0;
+  --admin-panel-bg: #181c27;
+  color-scheme: dark;
+}
+:root[data-theme="light"] body[data-page="admin"] {
+  --admin-control-bg: #f5f8fd;
+  --admin-control-border: #cfdaeb;
+  --admin-control-text: #13233f;
+  --admin-control-muted: #596d89;
+  --admin-panel-bg: #ffffff;
+  color-scheme: light;
+}
+body[data-page="admin"] .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  max-width: 100%;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font: 700 13px/1.4 "Plus Jakarta Sans", Inter, sans-serif;
+  text-decoration: none;
+}
+body[data-page="admin"] .btn:disabled { opacity: .5; cursor: not-allowed; }
+body[data-page="admin"] .modal .grid2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+body[data-page="admin"] .modal-card { color: var(--admin-control-text); }
+body[data-page="admin"] .modal-card .field :is(input,select,textarea) {
+  min-height: 44px;
+  font-size: 14px;
+  background-color: var(--admin-control-bg);
+  border-color: var(--admin-control-border);
+  color: var(--admin-control-text);
+}
+body[data-page="admin"] .modal-card .field select {
+  appearance: none;
+  padding-inline-end: 38px;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='m4 6 4 4 4-4' stroke='%239cabc0' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+}
+body[data-page="admin"] .modal-card .field label { color: var(--admin-control-muted); }
+body[data-page="admin"] .admin-file-control { min-width: 0; margin: 12px 0 16px; }
+body[data-page="admin"] .admin-file-picker {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  min-height: 82px;
+  padding: 15px;
+  border: 1px dashed var(--admin-control-border);
+  border-radius: 12px;
+  background: var(--admin-control-bg);
+  color: var(--admin-control-text);
+  cursor: pointer;
+}
+body[data-page="admin"] .admin-file-picker:hover { border-color: #4d91ff; }
+body[data-page="admin"] .admin-file-picker:focus-within { outline: 3px solid #3b82f64a; outline-offset: 2px; border-color: #4d91ff; }
+body[data-page="admin"] .admin-file-icon { display: grid; place-items: center; flex: none; width: 38px; height: 38px; border-radius: 10px; background: #3b82f61c; color: #75a8ff; }
+body[data-page="admin"] .admin-file-icon svg { width: 21px; height: 21px; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+body[data-page="admin"] .admin-file-copy { display: grid; gap: 5px; flex: 1; min-width: 0; }
+body[data-page="admin"] .admin-file-copy strong { font: 700 13px/1.5 "Plus Jakarta Sans", sans-serif; }
+body[data-page="admin"] .admin-file-copy small { color: var(--admin-control-muted); font-size: 11px; line-height: 1.6; }
+body[data-page="admin"] .admin-file-browse { flex: none; padding: 9px 13px; border-radius: 8px; background: #2563eb; color: #fff; font: 700 12px/1.5 "Plus Jakarta Sans", sans-serif; }
+body[data-page="admin"] .admin-file-picker > .admin-file-input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; padding: 0; border: 0; opacity: 0; cursor: pointer; }
+body[data-page="admin"] .admin-file-selection { margin: 8px 2px 0; color: var(--admin-control-muted); font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
+body[data-page="admin"] .admin-file-control.is-disabled { opacity: .6; }
+body[data-page="admin"] .admin-file-control.is-disabled :is(.admin-file-picker,.admin-file-input) { cursor: not-allowed; }
+body[data-page="admin"] .admin-video-status { justify-content: space-between; gap: 16px; font-size: 13px; }
+body[data-page="admin"] .admin-video-status > span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+body[data-page="admin"] .project-actions { gap: 12px; }
+body[data-page="admin"] .project-actions .btn { min-width: 130px; }
+body[data-page="admin"] .admin-startup { display: grid; place-items: center; min-height: 100svh; padding: 24px; background: radial-gradient(circle at top, #1e3a8a44, #0f1117 65%); }
+body[data-page="admin"] .admin-startup-card { display: flex; flex-direction: column; align-items: center; gap: 22px; width: 100%; max-width: 480px; padding: 36px 28px; border: 1px solid var(--admin-control-border); border-radius: 20px; background: var(--admin-panel-bg); color: var(--admin-control-text); text-align: center; box-shadow: 0 18px 60px #0003; }
+body[data-page="admin"] .admin-startup-card h1 { margin: 0; font-size: 22px; line-height: 1.4; }
+body[data-page="admin"] .admin-startup-card p { margin: 0; color: var(--admin-control-muted); font-size: 14px; line-height: 1.7; }
+body[data-page="admin"] .admin-startup-spinner { width: 32px; height: 32px; border: 3px solid #3b82f633; border-top-color: #3b82f6; border-radius: 50%; animation: admin-console-spin .8s linear infinite; }
+body[data-page="admin"] .admin-startup-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; width: 100%; }
+body[data-page="admin"] .admin-startup-actions .btn { min-width: 120px; }
+@keyframes admin-console-spin { to { transform: rotate(360deg); } }
+@media (max-width: 800px) {
+  body[data-page="admin"] .modal .grid2 { grid-template-columns: minmax(0, 1fr); }
+  body[data-page="admin"] .modal.open { z-index: 120; }
+  body[data-page="admin"] .modal-card { width: 100%; max-height: 94dvh; padding: 18px; }
+  body[data-page="admin"] .admin-file-picker { flex-wrap: wrap; }
+  body[data-page="admin"] .admin-file-browse { margin-inline-start: 50px; }
+  body[data-page="admin"] .admin-file-copy { min-width: 140px; }
+  body[data-page="admin"] .admin-startup { padding: 16px; }
+  body[data-page="admin"] .admin-startup-card { padding: 28px 20px; }
+}
+@media (prefers-reduced-motion: reduce) { .admin-startup-spinner { animation: none; } }

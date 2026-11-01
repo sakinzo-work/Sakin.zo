@@ -1,6 +1,7 @@
 import { mediaUrl, safeUrl } from "./api.js";
 
 export const previewDevices = ["phone", "tablet", "desktop"];
+export const projectCategories = ["IoT", "Web Development", "Android App", "iOS App", "AI / ML", "Desktop App", "Blockchain", "Game Development", "Other"];
 export function cleanList(value) {
   return (Array.isArray(value) ? value : [value])
     .flatMap((item) => {

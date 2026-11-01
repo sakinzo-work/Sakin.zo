@@ -43,16 +43,22 @@ export function AdminProvider({ children }) {
   const ask = (options) =>
     new Promise((resolve) => setConfirmation({ ...options, resolve }));
   const generation = useRef(0),
+    syncRequest = useRef(null),
+    hasSynced = useRef(false),
     editRef = useRef(editing),
     noticeTimer = useRef();
   editRef.current = editing;
   const logout = useCallback(() => {
     generation.current++;
+    syncRequest.current?.abort();
+    syncRequest.current = null;
+    hasSynced.current = false;
     sessionStorage.removeItem("sakinzo_admin_token");
     setToken("");
     setUser(null);
     setData(empty);
     setEditing(null);
+    setSynced(null);
     setLoading(false);
     setError("");
   }, []);
@@ -61,7 +67,7 @@ export function AdminProvider({ children }) {
       try {
         return await adminRequest(path, token, options);
       } catch (failure) {
-        if (failure.status === 401 && path !== "/auth/login") logout();
+        if (failure.status === 401 && path !== "/auth/login" && !options?.signal?.aborted) logout();
         throw failure;
       }
     },
@@ -76,41 +82,47 @@ export function AdminProvider({ children }) {
   const refresh = useCallback(
     async (silent = false) => {
       if (!token) return;
+      syncRequest.current?.abort();
+      const controller = new AbortController();
+      syncRequest.current = controller;
       const run = ++generation.current;
-      if (!silent) setLoading(true);
+      if (!silent) { setLoading(true); setError(""); }
       try {
-        const me = await request("/auth/me");
+        const get = path => request(path, { signal: controller.signal });
+        const me = await get("/auth/me");
         const current = me.admin;
+        if (!current || typeof current !== "object" || Array.isArray(current))
+          throw new Error("Your session couldn't be verified. Try again or sign out and sign in again.");
         const optional = async (key, path, fallback = []) => {
           if (!mayView(current, key)) return fallback;
           try {
-            return await request(path);
+            return await get(path);
           } catch (failure) {
             if (failure.status === 403 || failure.status === 404)
               return fallback;
             throw failure;
           }
         };
-        const results = await Promise.all(
+        const [results, extras] = await Promise.all([Promise.all(
           Object.entries(endpoints)
             .filter(([key]) => key !== "admins" && key !== "submissions")
             .map(async ([key, path]) => [
               key,
               await optional(key, `/${path}/admin/all`),
             ]),
-        );
-        const extras = await Promise.all([
+        ), Promise.all([
           optional("contactPage", "/contact-page", {}),
           optional("sections", "/sections"),
           optional("whatWeDoServices", "/what-we-do-services"),
           optional("contactPage", "/submissions"),
-          request("/approvals"),
-          request("/admins").catch((failure) => {
+          get("/approvals"),
+          get("/admins").catch((failure) => {
             if (failure.status === 403 || failure.status === 404) return [];
             throw failure;
           }),
-        ]);
+        ])]);
         if (run !== generation.current) return;
+        hasSynced.current = true;
         setUser(current);
         setData({
           ...empty,
@@ -125,9 +137,13 @@ export function AdminProvider({ children }) {
         setSynced(new Date());
         setError("");
       } catch (failure) {
-        if (run === generation.current) setError(failure.message);
+        if (run === generation.current && !controller.signal.aborted) setError(failure.message);
       } finally {
-        if (run === generation.current) setLoading(false);
+        if (run === generation.current) {
+          syncRequest.current = null;
+          setLoading(false);
+        }
+        controller.abort();
       }
     },
     [token, request],
@@ -136,12 +152,14 @@ export function AdminProvider({ children }) {
     if (!token) return;
     refresh();
     const timer = setInterval(() => {
-      if (!editRef.current && document.visibilityState === "visible")
+      if (hasSynced.current && !syncRequest.current && !editRef.current && document.visibilityState === "visible")
         refresh(true);
     }, 15000);
     return () => {
       clearInterval(timer);
       generation.current++;
+      syncRequest.current?.abort();
+      syncRequest.current = null;
     };
   }, [refresh, token]);
   const login = async (email, password) => {

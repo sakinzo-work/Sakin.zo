@@ -6,6 +6,7 @@ import { contactDefaults, labels, sortRecords } from "./config.js";
 import { Field, humanLabel } from "./ResourceEditor.jsx";
 import { mediaUrl, safeUrl } from "../../lib/api.js";
 import { uploadMedia } from "./api.js";
+import UploadField from "./UploadField.jsx";
 export function useAction() {
   const [busy, setBusy] = useState(false),
     [error, setError] = useState("");
@@ -1045,12 +1046,13 @@ export function Profile() {
               }
             />
           ))}
-          <label className="field">
-            Upload profile picture
-            <input
-              type="file"
+            <UploadField
+              id="upload-profile-picture"
+              label="Upload profile picture"
+              hint="Choose an image for your profile."
               accept="image/*"
               disabled={action.busy}
+              busy={action.busy}
               onChange={(event) => {
                 const file = event.target.files[0];
                 if (file)
@@ -1063,7 +1065,6 @@ export function Profile() {
                   });
               }}
             />
-          </label>
           {action.error && <p role="alert">{action.error}</p>}
           <button className="btn primary" disabled={action.busy}>
             {action.busy

@@ -1,22 +1,42 @@
 import { apiBase } from "../../lib/api.js";
 export async function adminRequest(path, token, options = {}) {
-  const multipart = options.body instanceof FormData;
+  const { signal, timeoutMs = options.body instanceof FormData ? 120000 : 30000, ...requestOptions } = options;
+  const controller = new AbortController();
+  let timedOut = false;
+  const abort = () => controller.abort();
+  if (signal?.aborted) controller.abort();
+  else signal?.addEventListener("abort", abort, { once: true });
+  const timeout = setTimeout(() => { timedOut = true; controller.abort(); }, timeoutMs);
+  const multipart = requestOptions.body instanceof FormData;
+  try {
   const response = await fetch(`${apiBase()}${path}`, {
     cache: "no-store",
-    ...options,
+    ...requestOptions,
+    signal: controller.signal,
     headers: {
       ...(multipart ? {} : { "Content-Type": "application/json" }),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options.headers,
     },
   });
-  const data = await response.json().catch(() => ({}));
+  const data = await response.json().catch(error => {
+    if (controller.signal.aborted) throw error;
+    return {};
+  });
   if (!response.ok) {
     const error = new Error(data.message || "Request failed.");
     error.status = response.status;
     throw error;
   }
   return data;
+  } catch (error) {
+    if (timedOut) throw new Error("The admin server is taking too long to respond. Please try again.");
+    if (error instanceof TypeError) throw new Error("Couldn't reach the admin server. Check your connection and try again.");
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+    signal?.removeEventListener("abort", abort);
+  }
 }
 export function validateVideo(file) {
   if (!file) return;

@@ -6,19 +6,9 @@ import { T } from "../../context/LanguageContext.jsx";
 import { mediaUrl, safeUrl } from "../../lib/api.js";
 import { appPath, assetUrl } from "../../lib/paths.js";
 import BlogImage from "../../components/BlogImage.jsx";
-import { projectImages } from "../../lib/project.js";
+import { projectCategories, projectImages } from "../../lib/project.js";
 import ContentState, { ProjectSkeletons } from "../../components/ContentState.jsx";
-export const categoryOrder = [
-  "IoT",
-  "Web Development",
-  "Android App",
-  "iOS App",
-  "AI / ML",
-  "Desktop App",
-  "Blockchain",
-  "Game Development",
-  "Other",
-];
+export const categoryOrder = projectCategories;
 export function categoryKey(category = "") {
   const value = String(category || "").trim().toLowerCase().replace(/\s+/g, " ");
   return (
