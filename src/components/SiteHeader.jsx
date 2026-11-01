@@ -7,11 +7,11 @@ import services from "../data/services.json";
 import { usePageSlug } from "../lib/PageContext.js";
 import LanguagePicker from "./LanguagePicker.jsx";
 import { useLocation } from "react-router-dom";
-export function Logo() {
+export function Logo({ className = "logo" }) {
   return (
     <Localized>
       <NoTranslate>
-        <RouteLink href="/" className="logo" aria-label="Sakinzo home">
+        <RouteLink href="/" className={className} aria-label="Sakinzo home">
           <svg
             width="36"
             height="36"

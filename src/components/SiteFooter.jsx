@@ -1,19 +1,12 @@
-import { NoTranslate } from "../context/LanguageContext.jsx";
 import RouteLink from "./AppLink.jsx";
 import { T } from "../context/LanguageContext.jsx";
 import ContactLinks from "./ContactLinks.jsx";
+import { Logo } from "./SiteHeader.jsx";
 export default function SiteFooter() {
   return (
     <footer className="site-footer">
       <div className="footer-inner">
-        <NoTranslate>
-          <RouteLink className="brand logo-txt" href="/">
-            <T>{" Sakin"}</T>
-            <span>
-              <T>{".zo"}</T>
-            </span>
-          </RouteLink>
-        </NoTranslate>
+        <Logo className="logo footer-logo" />
         <div className="footer-links">
           <RouteLink href="/services"><T>Services</T></RouteLink>
           <RouteLink href="/who-we-are">
