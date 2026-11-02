@@ -51,7 +51,8 @@ test("one React entry shell serves native JSX routes without DOM controllers", (
     ["index.html"],
   );
   const index = fs.readFileSync(path.join(dist, "index.html"), "utf8");
-  assert.match(index, /<div id="root"><\/div>/);
+  assert.match(index, /<div id="root"><main class="seo-prerender-fallback"/);
+  assert.match(index, /<a href="\/web-mobile-development">Web and mobile development<\/a>/);
   assert.match(index, /type="module"/);
   assert.equal(fs.existsSync(path.join(root, "src/controllers")), false);
   const files = [];
@@ -80,7 +81,11 @@ test("one React entry shell serves native JSX routes without DOM controllers", (
   }
   const assets = walk(parse(index)).flatMap((node) =>
     (node.attrs || [])
-      .filter((attribute) => ["src", "href"].includes(attribute.name))
+      .filter(
+        (attribute) =>
+          attribute.name === "src" ||
+          (node.tagName === "link" && attribute.name === "href"),
+      )
       .map((attribute) => attribute.value),
   );
   for (const asset of assets) {

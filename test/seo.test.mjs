@@ -48,6 +48,19 @@ test("every public route has its own metadata and canonical in the HTTP HTML bef
   }
   assert.equal(titles.size, catalog.routes.length, "Every page has a descriptive, unique title");
 });
+test("priority landing pages include useful crawlable copy and contextual links before JavaScript", () => {
+  for (const [slug, phrases, hrefs] of [
+    ["index", ["custom websites", "AI solutions", "connected IoT products"], ["/web-mobile-development", "/ai-agent-development", "/iot-development"]],
+    ["web-mobile-development", ["Android and iOS app", "quality assurance", "Mumbai and Thane"], ["/projects", "/contact"]],
+    ["ai-agent-development", ["trusted information", "human review", "Mumbai and Thane"], ["/blog/practical-guide-ai-assistant-business-systems", "/contact"]],
+    ["iot-development", ["device integration", "device identity", "operational environment"], ["/blog/iot-platform-architecture-layers-guide", "/contact"]],
+  ]) {
+    const route = catalog.routes.find((item) => item.slug === slug);
+    const html = fs.readFileSync(path.join(root, route.slug === "index" ? "dist/index.html" : `dist/seo/${route.slug}.html`), "utf8");
+    for (const phrase of phrases) assert.ok(html.toLowerCase().includes(phrase.toLowerCase()), `${slug}: ${phrase}`);
+    for (const href of hrefs) assert.ok(html.includes(`href="${href}"`), `${slug}: ${href}`);
+  }
+});
 test("canonicals discard tracking and translation parameters while retaining article identity", () => {
   assert.equal(canonicalUrl("/web-mobile-development/", "?utm_source=instagram&lang=hi"), "https://sakinzo.vercel.app/web-mobile-development");
   assert.equal(canonicalUrl("/blog", "?slug=engineering-guide&utm_source=share&lang=hi"), "https://sakinzo.vercel.app/blog/engineering-guide");
@@ -68,7 +81,7 @@ test("SEO serialization escapes untrusted titles and scripts without duplicate m
   assert.ok(JSON.parse(text(page.schema[0]))["@graph"].some(item => item["@type"] === "BlogPosting"));
 });
 const content = {
-  blogs: [{ _id: "post", slug: "test-guide", title: "A useful engineering guide", excerpt: "A guide to reliable software design and delivery.", category: "Engineering", coverImage: "assets/service-ai.webp", author: "Sakinzo Team", publishedAt: "2026-10-29", updatedAt: "2026-10-30", visible: true }, { _id: "hidden", slug: "hidden-guide", visible: false }],
+  blogs: [{ _id: "post", slug: "test-guide", title: "A useful engineering guide", excerpt: "A guide to reliable software design and delivery.", body: "## A connected **application**", category: "Engineering", coverImage: "assets/service-ai.webp", author: "Sakinzo Team", publishedAt: "2026-10-29", updatedAt: "2026-10-30", visible: true }, { _id: "hidden", slug: "hidden-guide", visible: false }],
   projects: [{ _id: "project-1", title: "Useful app", desc: "## A connected **application**", img: "/uploads/project.webp", visible: true }],
 };
 async function invoke(query, { available = true, method = "GET" } = {}) {
@@ -79,7 +92,7 @@ async function invoke(query, { available = true, method = "GET" } = {}) {
   return result;
 }
 test("dynamic article and project responses provide the actual record's share metadata", async () => {
-  for (const [kind, value, expected] of [["blog", "test-guide", content.blogs[0].title], ["project", "project-1", content.projects[0].title]]) {
+  for (const [kind, value, expected] of [["blog", "test-guide", content.blogs[0].title], ["project", "useful-app", content.projects[0].title]]) {
     const result = await invoke({ kind, value });
     assert.equal(result.statusCode, 200);
     const page = inspect(result.body);
@@ -87,6 +100,11 @@ test("dynamic article and project responses provide the actual record's share me
     assert.equal(attr(page.canonical[0], "href"), `${catalog.siteUrl}${kind === "blog" ? "blog" : "projects"}/${value}`);
     const graph = JSON.parse(text(page.schema[0]))["@graph"];
     assert.ok(graph.some(item => item["@type"] === (kind === "blog" ? "BlogPosting" : "CreativeWork")));
+    if (kind === "blog") {
+      assert.ok(result.body.includes("<h2 id=\"guide-a-connected-application\">"));
+      assert.ok(result.body.includes("<strong>application</strong>"));
+      assert.ok(result.body.includes("A connected"));
+    }
     assert.ok(!result.body.includes("## A connected **application**"));
   }
 });
@@ -113,7 +131,7 @@ test("the live sitemap includes visible records, accurate dates and new content;
   assert.ok(!sitemapXml(entries).includes("hidden-guide"));
   const result = await invoke({ kind: "sitemap" });
   assert.equal(result.statusCode, 200);
-  assert.ok(result.body.includes("/blog/test-guide") && result.body.includes("/projects/project-1"));
+  assert.ok(result.body.includes("/blog/test-guide") && result.body.includes("/projects/useful-app"));
   const index = fs.readFileSync(path.join(root, "dist/sitemap.xml"), "utf8");
   assert.ok(index.includes("sitemap-live.xml") && index.includes("sitemap-static.xml"));
   assert.ok(!fs.readFileSync(path.join(root, "dist/sitemap-static.xml"), "utf8").includes("/admin"));

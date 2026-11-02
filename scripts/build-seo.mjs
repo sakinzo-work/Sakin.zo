@@ -83,6 +83,8 @@ const catalog = {
         coverImage,
         author,
         category,
+        tags,
+        body,
         publishedAt,
         updatedAt,
         visible,
