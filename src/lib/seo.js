@@ -117,6 +117,7 @@ export function createSeo({
       "@type": "WebSite",
       "@id": websiteId,
       name: "Sakin.zo",
+      alternateName: "Sakinzo",
       url: base,
       publisher: { "@id": organizationId },
       inLanguage: "en",

@@ -275,7 +275,7 @@ export default function Page() {
             <p className={"hero-copy"}>
               <T>
                 {
-                  "We build modern, scalable and intelligent digital solutions that help businesses grow, innovate and stay ahead."
+                  "Sakin.zo builds custom websites, mobile apps, AI solutions and connected IoT products for businesses in Mumbai and Thane."
                 }
               </T>
             </p>
