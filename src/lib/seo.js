@@ -95,7 +95,7 @@ export function createSeo({
     name: "Sakin.zo",
     alternateName: "Sakinzo",
     url: base,
-    logo: { "@type": "ImageObject", url: new URL("favicon.svg", base).href },
+    logo: { "@type": "ImageObject", url: new URL("favicon.png", base).href },
     email: contact.email,
     telephone: "+918879162814",
     sameAs: [contact.instagramUrl],

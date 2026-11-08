@@ -4,9 +4,9 @@
   "description": "AI, IoT, FinTech and custom software development for ambitious businesses.",
   "icons": [
     {
-      "src": "favicon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "favicon.png",
+      "sizes": "192x192",
+      "type": "image/png",
       "purpose": "any maskable"
     }
   ],
