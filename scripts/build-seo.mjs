@@ -136,7 +136,6 @@ await fs.writeFile(
 );
 for (const route of [...routes, { slug: "admin", path: "/admin" }]) {
   const seo = routeSeo(catalog, route.slug, route.path);
-  if (route.slug === "project") seo.robots = "noindex, follow";
   const document = seoDocument(shell, seo);
   await fs.writeFile(
     path.join(
@@ -156,7 +155,6 @@ await fs.writeFile(
   path.join(root, "dist/sitemap-static.xml"),
   sitemapXml(
     routes
-      .filter((route) => route.slug !== "project")
       .map((route) => ({ url: canonicalUrl(route.path, "", siteUrl) })),
   ),
 );

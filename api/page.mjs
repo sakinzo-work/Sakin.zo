@@ -111,7 +111,6 @@ export function createPageHandler({
         kind === "blog-index" ? "blog" : "project",
         kind === "blog-index" ? "/blog" : "/projects",
       );
-      if (kind === "project-index") seo.robots = "noindex, follow";
       return response
         .status(200)
         .send(request.method === "HEAD" ? "" : seoDocument(shell, seo));

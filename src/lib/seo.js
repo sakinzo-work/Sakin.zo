@@ -188,11 +188,7 @@ export function createSeo({
     robots:
       meta.noindex || ["admin", "not-found"].includes(slug)
         ? "noindex, nofollow"
-        : slug === "project" &&
-            !/\/projects\/.+/.test(path) &&
-            !new URLSearchParams(search).get("id")
-          ? "noindex, follow"
-          : "index, follow, max-image-preview:large",
+        : "index, follow, max-image-preview:large",
     schema: { "@context": "https://schema.org", "@graph": graph },
   };
 }

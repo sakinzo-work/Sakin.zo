@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { parse } from "parse5";
 import { canonicalUrl, createSeo, seoImage } from "../src/lib/seo.js";
 import { contentEntries, routeSeo, seoDocument, sitemapXml } from "../scripts/seo-document.mjs";
+import { contentSlug } from "../src/lib/content-slugs.js";
 import { createPageHandler } from "../api/page.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -60,6 +61,18 @@ test("priority landing pages include useful crawlable copy and contextual links 
     for (const phrase of phrases) assert.ok(html.toLowerCase().includes(phrase.toLowerCase()), `${slug}: ${phrase}`);
     for (const href of hrefs) assert.ok(html.includes(`href="${href}"`), `${slug}: ${href}`);
   }
+});
+test("the projects hub is indexable, linked to its case studies, and included in the static sitemap", () => {
+  const seo = routeSeo(catalog, "project", "/projects");
+  assert.equal(seo.robots, "index, follow, max-image-preview:large");
+  const page = inspect(seoDocument(shell, seo));
+  assert.equal(attr(page.metas("robots")[0], "content"), "index, follow, max-image-preview:large");
+  assert.ok(seoDocument(shell, seo).includes("Selected software and connected product work"));
+  for (const project of catalog.content.projects.slice(0, 3)) {
+    const slug = contentSlug(project, catalog.content.projects, "project");
+    assert.ok(seoDocument(shell, seo).includes(`/projects/${slug}`));
+  }
+  assert.ok(fs.readFileSync(path.join(root, "dist/sitemap-static.xml"), "utf8").includes("https://sakinzo.vercel.app/projects"));
 });
 test("canonicals discard tracking and translation parameters while retaining article identity", () => {
   assert.equal(canonicalUrl("/web-mobile-development/", "?utm_source=instagram&lang=hi"), "https://sakinzo.vercel.app/web-mobile-development");

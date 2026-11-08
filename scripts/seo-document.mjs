@@ -218,6 +218,14 @@ function renderSeoFallback(seo, title) {
       links: posts.map((post) => [post.title, `/blog/${contentSlug(post, posts, "blog")}`]),
     }];
   }
+  if (content.slug === "project" && !row) {
+    const projects = seo.content?.projects || [];
+    sections = [{
+      heading: "Selected software and connected product work",
+      paragraphs: ["Explore project work across web and mobile products, AI, IoT and connected devices. Each case study describes the product, its goals and the solution built."],
+      links: projects.map((project) => [project.title, `/projects/${contentSlug(project, projects, "project")}`]),
+    }];
+  }
   const article = row && content.slug === "blog";
   const project = row && content.slug === "project";
   const articleDate = article && row.publishedAt && !Number.isNaN(Date.parse(row.publishedAt))
